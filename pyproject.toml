@@ -6,7 +6,6 @@ authors = ["Odaka Ui <31593320+odakaui@users.noreply.github.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-spacy = "^3.1.2"
 
 [tool.poetry.dev-dependencies]
 
