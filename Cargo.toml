@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 lindera = "0.8.0"
 anyhow = "1"
+rusqlite = "0.25"

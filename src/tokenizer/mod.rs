@@ -14,7 +14,8 @@ pub struct Tokenizer {
 impl Tokenizer {
     pub fn new() -> Result<Self> {
         Ok(Tokenizer {
-            tokenizer: lindera::tokenizer::Tokenizer::new().context("Failed to initialize the tokenizer")?,
+            tokenizer: lindera::tokenizer::Tokenizer::new()
+                .context("Failed to initialize the tokenizer")?,
         })
     }
 
@@ -106,7 +107,7 @@ mod tests {
         let actual_results = tokenizer.tokenize(line)?;
 
         assert_eq!(expected_results, actual_results);
-        
+
         Ok(())
     }
 }
