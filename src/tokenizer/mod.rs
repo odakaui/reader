@@ -1,11 +1,9 @@
 use anyhow::{Context, Result};
 use lindera;
 
-use token::Token;
+use crate::data_types::token::Token;
 
 pub mod converter;
-pub mod pos;
-pub mod token;
 
 pub struct Tokenizer {
     tokenizer: lindera::tokenizer::Tokenizer,
