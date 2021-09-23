@@ -19,14 +19,13 @@ impl Tokenizer {
 
     pub fn tokenize(&mut self, text: &str) -> Result<Vec<Token>> {
         Ok(Tokenizer::convert_tokens(
-            text,
             self.tokenizer
                 .tokenize(text)
                 .context("Failed to tokenize the text")?,
         ))
     }
 
-    fn convert_tokens(sentence: &str, tokens: Vec<lindera::tokenizer::Token>) -> Vec<Token> {
+    fn convert_tokens(tokens: Vec<lindera::tokenizer::Token>) -> Vec<Token> {
         tokens
             .iter()
             .map(|x| Token {
@@ -36,7 +35,6 @@ impl Tokenizer {
                     x.text.to_string()
                 },
                 pos: converter::convert_pos(x.detail[0].as_ref()),
-                sentence: sentence.to_string(),
                 text: x.text.to_string(),
             })
             .collect()

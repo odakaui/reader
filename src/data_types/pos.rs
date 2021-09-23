@@ -1,4 +1,6 @@
-#[derive(Debug, PartialEq, PartialOrd)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub enum POS {
     EMPTY,
     PRON,

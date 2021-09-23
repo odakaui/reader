@@ -1,17 +1,22 @@
 use anyhow::Result;
+use data_types::token::Token;
 use database::Database;
-use std::path::Path;
-
-pub mod data_types;
-pub mod database;
-pub mod tokenizer;
-
-use druid::piet::Text;
 use druid::widget::{Align, Controller, CrossAxisAlignment, Flex, Label, MainAxisAlignment};
 use druid::{
     AppLauncher, Color, Data, Env, Event, EventCtx, FontDescriptor, FontFamily, Key, Lens,
     LocalizedString, Widget, WidgetExt, WindowDesc,
 };
+use ron::ser::{PrettyConfig, to_string_pretty};
+use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::BufReader;
+use std::path::Path;
+use tokenizer::Tokenizer;
+
+pub mod data_types;
+pub mod database;
+pub mod tokenizer;
 
 const HORIZONTAL_WIDGET_SPACING: f64 = 64.0;
 const BACKGROUND_TEXT_COLOR: Key<Color> = Key::new("background-text-color");
@@ -25,10 +30,61 @@ struct ApplicationState {
     font: Option<FontFamily>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct Article {
+    file_name: String,
+    tokens: Vec<Line>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Line {
+    sentence: String,
+    tokens: Vec<Token>,
+}
+
 pub fn main() -> Result<()> {
-    launch_app()?;
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("resources/japanese.txt");
+    let contents = read_file(&path)?;
+
+    let lines = contents.lines();
+    let clean_lines: Vec<String> = lines
+        .map(|x| x.chars().filter(|c| !c.is_whitespace()).collect())
+        .filter(|x| x != "")
+        .collect();
+
+    let mut tokenizer = Tokenizer::new()?;
+    let file_name = path.file_stem().unwrap().to_str().unwrap();
+
+    let mut tokenized_lines: Vec<Line> = Vec::new();
+    for x in clean_lines.iter() {
+        let tokens = tokenizer.tokenize(x)?;
+        let line = Line {
+            sentence: x.into(),
+            tokens: tokens,
+        };
+
+        tokenized_lines.push(line);
+    }
+
+    let article = Article {
+        file_name: file_name.into(),
+        tokens: tokenized_lines,
+    };
+
+    println!("{}", to_string_pretty(&article, PrettyConfig::new())?);
+
+    // launch_app()?;
 
     Ok(())
+}
+
+fn read_file(path: &Path) -> Result<String> {
+    let f = File::open(path)?;
+    let mut buf = BufReader::new(f);
+    let mut contents = String::new();
+    buf.read_to_string(&mut contents)?;
+
+    Ok(contents)
 }
 
 fn launch_app() -> Result<()> {
