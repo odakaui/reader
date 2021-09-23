@@ -25,7 +25,7 @@ struct ApplicationState {
     font: Option<FontFamily>,
 }
 
-pub fn main() {
+pub fn main() -> Result<()> {
     // describe the main window
     let main_window = WindowDesc::new(build_root_widget)
         .title(WINDOW_TITLE)
@@ -47,8 +47,9 @@ pub fn main() {
                 Color::from_hex_str("#3C3C3C").unwrap(),
             );
         })
-        .launch(initial_state)
-        .expect("Failed to launch application");
+        .launch(initial_state)?;
+
+    Ok(())
 }
 
 fn build_root_widget() -> impl Widget<ApplicationState> {
