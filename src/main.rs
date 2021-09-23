@@ -26,6 +26,12 @@ struct ApplicationState {
 }
 
 pub fn main() -> Result<()> {
+    launch_app()?;
+
+    Ok(())
+}
+
+fn launch_app() -> Result<()> {
     // describe the main window
     let main_window = WindowDesc::new(build_root_widget)
         .title(WINDOW_TITLE)
