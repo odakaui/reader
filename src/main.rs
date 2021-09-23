@@ -3,8 +3,9 @@ use data_types::token::Token;
 use database::Database;
 use druid::widget::{Align, Controller, CrossAxisAlignment, Flex, Label, MainAxisAlignment};
 use druid::{
-    AppLauncher, Color, Command, Data, Env, Event, EventCtx, FontDescriptor, FontFamily, Key, Lens,
-    LocalizedString, MenuDesc, MenuItem, RawMods, Selector, Target, Widget, WidgetExt, WindowDesc,
+    AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, Event, EventCtx,
+    FontDescriptor, FontFamily, Handled, Key, Lens, LocalizedString, MenuDesc, MenuItem, RawMods,
+    Selector, Target, Widget, WidgetExt, WindowDesc, WindowId,
 };
 use ron::ser::{to_string_pretty, PrettyConfig};
 use serde::{Deserialize, Serialize};
@@ -21,6 +22,7 @@ pub mod tokenizer;
 const HORIZONTAL_WIDGET_SPACING: f64 = 64.0;
 const BACKGROUND_TEXT_COLOR: Key<Color> = Key::new("background-text-color");
 const WINDOW_TITLE: LocalizedString<ApplicationState> = LocalizedString::new("Reader");
+const SET_UNKNOWN: Selector<()> = Selector::new("set_unknown");
 
 #[derive(Clone, Data, Lens)]
 struct ApplicationState {
@@ -45,6 +47,26 @@ struct Article {
 struct Line {
     sentence: String,
     tokens: Vec<Token>,
+}
+
+struct Delegate;
+
+impl AppDelegate<ApplicationState> for Delegate {
+    fn command(
+        &mut self,
+        ctx: &mut DelegateCtx<'_>,
+        target: Target,
+        cmd: &Command,
+        data: &mut ApplicationState,
+        env: &Env,
+    ) -> Handled {
+        if cmd.is(SET_UNKNOWN) {
+            println!("Set Unknown");
+            Handled::Yes
+        } else {
+            Handled::No
+        }
+    }
 }
 
 pub fn main() -> Result<()> {
@@ -115,28 +137,31 @@ fn launch_app(initial_state: ApplicationState) -> Result<()> {
     let main_window = WindowDesc::new(build_root_widget)
         .title(WINDOW_TITLE)
         .menu(
-            MenuDesc::empty().append(
-                MenuDesc::new(LocalizedString::new("File"))
-                    .append(
+            MenuDesc::empty()
+                .append(
+                    MenuDesc::new(LocalizedString::new("File")).append(
                         MenuItem::new(
                             LocalizedString::new("open"),
                             Command::new(Selector::new("open"), 1, Target::Auto),
                         )
                         .hotkey(RawMods::Ctrl, "o"),
-                    )
-                    .append(
-                        MenuItem::new(
-                            LocalizedString::new("switch"),
-                            Command::new(Selector::new("open"), 1, Target::Auto),
-                        )
-                        .hotkey(None, "s"),
                     ),
-            ),
+                )
+                .append(
+                    MenuDesc::new(LocalizedString::new("Reader")).append(
+                        MenuItem::new(
+                            LocalizedString::new("Mark Unknown"),
+                            Command::new(SET_UNKNOWN, (), Target::Auto),
+                        )
+                        .hotkey(None, "f"),
+                    ),
+                ),
         )
         .window_size((1000.0, 800.0));
 
     // start the application
     AppLauncher::with_window(main_window)
+        .delegate(Delegate)
         .configure_env(|env, _state| {
             env.set(
                 BACKGROUND_TEXT_COLOR,
