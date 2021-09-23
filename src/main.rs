@@ -23,6 +23,7 @@ const HORIZONTAL_WIDGET_SPACING: f64 = 64.0;
 const BACKGROUND_TEXT_COLOR: Key<Color> = Key::new("background-text-color");
 const WINDOW_TITLE: LocalizedString<ApplicationState> = LocalizedString::new("Reader");
 const SET_UNKNOWN: Selector<()> = Selector::new("set_unknown");
+const SET_KNOWN: Selector<()> = Selector::new("set_known");
 
 #[derive(Clone, Data, Lens)]
 struct ApplicationState {
@@ -62,6 +63,9 @@ impl AppDelegate<ApplicationState> for Delegate {
     ) -> Handled {
         if cmd.is(SET_UNKNOWN) {
             println!("Set Unknown");
+            Handled::Yes
+        } else if cmd.is(SET_KNOWN) {
+            println!("Set Known");
             Handled::Yes
         } else {
             Handled::No
@@ -148,13 +152,21 @@ fn launch_app(initial_state: ApplicationState) -> Result<()> {
                     ),
                 )
                 .append(
-                    MenuDesc::new(LocalizedString::new("Reader")).append(
-                        MenuItem::new(
-                            LocalizedString::new("Mark Unknown"),
-                            Command::new(SET_UNKNOWN, (), Target::Auto),
+                    MenuDesc::new(LocalizedString::new("Reader"))
+                        .append(
+                            MenuItem::new(
+                                LocalizedString::new("Mark Unknown"),
+                                Command::new(SET_UNKNOWN, (), Target::Auto),
+                            )
+                            .hotkey(None, "d"),
                         )
-                        .hotkey(None, "f"),
-                    ),
+                        .append(
+                            MenuItem::new(
+                                LocalizedString::new("Mark Known"),
+                                Command::new(SET_KNOWN, (), Target::Auto),
+                            )
+                            .hotkey(None, "f"),
+                        ),
                 ),
         )
         .window_size((1000.0, 800.0));
