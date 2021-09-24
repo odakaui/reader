@@ -31,8 +31,7 @@ struct ApplicationState {
     line_middle: String,
     line_end: String,
     font: Option<FontFamily>,
-    current_line: usize,
-    current_index: usize,
+    position: Position,
 
     #[data(ignore)]
     article: Article,
@@ -50,6 +49,12 @@ struct Line {
     tokens: Vec<Token>,
 }
 
+#[derive(Clone, Debug, Data, Lens)]
+struct Position {
+    index: usize,
+    line: usize,
+}
+
 struct Delegate;
 
 impl AppDelegate<ApplicationState> for Delegate {
@@ -63,9 +68,41 @@ impl AppDelegate<ApplicationState> for Delegate {
     ) -> Handled {
         if cmd.is(SET_UNKNOWN) {
             println!("Set Unknown");
+
+            let next_position = next_position(&data.article, &data.position);
+
+            match next_position {
+                Some(p) => {
+                    let a = &data.article;
+
+                    data.line_start = calculate_start(a, &p);
+                    data.line_middle = calculate_middle(a, &p);
+                    data.line_end = calculate_end(a, &p);
+
+                    data.position = p
+                },
+                None => println!("EOF"),
+            }
+
             Handled::Yes
         } else if cmd.is(SET_KNOWN) {
             println!("Set Known");
+
+            let next_position = next_position(&data.article, &data.position);
+
+            match next_position {
+                Some(p) => {
+                    let a = &data.article;
+
+                    data.line_start = calculate_start(a, &p);
+                    data.line_middle = calculate_middle(a, &p);
+                    data.line_end = calculate_end(a, &p);
+
+                    data.position = p
+                },
+                None => println!("EOF"),
+            }
+
             Handled::Yes
         } else {
             Handled::No
@@ -103,21 +140,13 @@ pub fn main() -> Result<()> {
     };
 
     // create the initial app state
-    let current_index = 0;
-    let current_line = 0;
+    let position = Position { index: 0, line: 0 };
+
     let initial_state = ApplicationState {
-        line_start: "".into(),
-        line_middle: article.lines[current_line].tokens[current_index]
-            .text
-            .clone(),
-        line_end: article.lines[current_line].tokens[current_index..]
-            .iter()
-            .map(|x| x.text.clone())
-            .collect::<Vec<String>>()
-            .join("")
-            .into(),
-        current_index: current_index,
-        current_line: current_line,
+        line_start: calculate_start(&article, &position),
+        line_middle: calculate_middle(&article, &position),
+        line_end: calculate_end(&article, &position),
+        position: position,
         font: None,
         article: article,
     };
@@ -125,6 +154,78 @@ pub fn main() -> Result<()> {
     launch_app(initial_state)?;
 
     Ok(())
+}
+
+// calculate the String to display in the left Label of the reader view
+fn calculate_start(article: &Article, position: &Position) -> String {
+    if position.index == 0 {
+        "".to_string()
+    } else {
+        let tokens = article.lines[position.line].tokens[..position.index].to_vec();
+        tokens
+            .iter()
+            .map(|x| x.text.to_string())
+            .collect::<Vec<String>>()
+            .join("")
+    }
+}
+
+// calculate the String to display in the center Label of the reader view
+fn calculate_middle(article: &Article, position: &Position) -> String {
+    article.lines[position.line].tokens[position.index]
+        .text
+        .to_string()
+}
+
+// calculate the String to display in the right Label of the reader view
+fn calculate_end(article: &Article, position: &Position) -> String {
+    let tokens = article.lines[position.line].tokens.clone();
+
+    if position.index >= tokens.len() {
+        "".to_string()
+    } else {
+        let slice = tokens[position.index + 1..].to_vec();
+        slice
+            .iter()
+            .map(|x| x.text.to_string())
+            .collect::<Vec<String>>()
+            .join("")
+    }
+}
+
+// calculate the next available index
+// returns None if the next position is past the end of the file
+fn next_position(article: &Article, current_position: &Position) -> Option<Position> {
+    let article_length = article.lines.len();
+    let line_length = article.lines[current_position.line].tokens.len();
+
+    let mut is_eof = false;
+
+    let new_index: usize;
+    let new_line: usize;
+
+    if current_position.index + 1 >= line_length {
+        new_index = 0;
+
+        if current_position.line + 1 >= article_length {
+            new_line = 0;
+            is_eof = true;
+        } else {
+            new_line = current_position.line + 1;
+        }
+    } else {
+        new_index = current_position.index + 1;
+        new_line = current_position.line;
+    }
+
+    if is_eof {
+        None
+    } else {
+        Some(Position {
+            index: new_index,
+            line: new_line,
+        })
+    }
 }
 
 fn read_file(path: &Path) -> Result<String> {
