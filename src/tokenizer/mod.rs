@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use lindera;
 
-use crate::data_types::token::Token;
+use crate::token::{Token, POS};
 
 pub mod converter;
 
@@ -45,9 +45,8 @@ impl Tokenizer {
 mod tests {
     use anyhow::Result;
 
-    use super::pos::POS::*;
-    use super::token::Token;
     use super::Tokenizer;
+    use super::{Token, POS::*};
 
     #[test]
     fn test_convert_tokens() -> Result<()> {
@@ -59,43 +58,36 @@ mod tests {
             Token {
                 lemma: "『".to_string(),
                 pos: PUNCT,
-                sentence: line.to_string(),
                 text: "『".to_string(),
             },
             Token {
                 lemma: "愛妻".to_string(),
                 pos: NOUN,
-                sentence: line.to_string(),
                 text: "愛妻".to_string(),
             },
             Token {
                 lemma: "弁当".to_string(),
                 pos: NOUN,
-                sentence: line.to_string(),
                 text: "弁当".to_string(),
             },
             Token {
                 lemma: "だ".to_string(),
                 pos: AUX,
-                sentence: line.to_string(),
                 text: "だ".to_string(),
             },
             Token {
                 lemma: "ー".to_string(),
                 pos: UNKNOWN,
-                sentence: line.to_string(),
                 text: "ー".to_string(),
             },
             Token {
                 lemma: "？".to_string(),
                 pos: PUNCT,
-                sentence: line.to_string(),
                 text: "？".to_string(),
             },
             Token {
                 lemma: "』".to_string(),
                 pos: PUNCT,
-                sentence: line.to_string(),
                 text: "』".to_string(),
             },
         ];

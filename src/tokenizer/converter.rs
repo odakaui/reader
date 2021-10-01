@@ -1,5 +1,4 @@
-use crate::data_types::pos::POS;
-use crate::data_types::pos::POS::*;
+use crate::token::{POS, POS::*};
 
 pub fn convert_pos(pos: &str) -> POS {
     match pos {
