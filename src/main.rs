@@ -1,11 +1,14 @@
 use anyhow::Result;
 use data_types::token::Token;
 use database::Database;
-use druid::widget::{Align, Controller, CrossAxisAlignment, Flex, Label, MainAxisAlignment};
+use druid::widget::{
+    Align, ClipBox, Controller, CrossAxisAlignment, Flex, Label, LineBreaking, MainAxisAlignment,
+};
 use druid::{
     AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, Event, EventCtx,
-    FontDescriptor, FontFamily, Handled, Key, Lens, LocalizedString, MenuDesc, MenuItem, RawMods,
-    Selector, Target, Widget, WidgetExt, WindowDesc, WindowId,
+    FontDescriptor, FontFamily, Handled, Key, Lens, LocalizedString, MenuDesc, MenuItem, Point,
+    RawMods, Rect, Selector, Target, TextAlignment, UpdateCtx, Widget, WidgetExt, WindowDesc,
+    WindowId,
 };
 use ron::ser::{to_string_pretty, PrettyConfig};
 use serde::{Deserialize, Serialize};
@@ -80,7 +83,7 @@ impl AppDelegate<ApplicationState> for Delegate {
                     data.line_end = calculate_end(a, &p);
 
                     data.position = p
-                },
+                }
                 None => println!("EOF"),
             }
 
@@ -99,7 +102,7 @@ impl AppDelegate<ApplicationState> for Delegate {
                     data.line_end = calculate_end(a, &p);
 
                     data.position = p
-                },
+                }
                 None => println!("EOF"),
             }
 
@@ -107,6 +110,40 @@ impl AppDelegate<ApplicationState> for Delegate {
         } else {
             Handled::No
         }
+    }
+}
+
+struct RightJustifiedController;
+
+impl<W: Widget<ApplicationState>> Controller<ApplicationState, ClipBox<ApplicationState, W>>
+    for RightJustifiedController
+{
+    fn update(
+        &mut self,
+        child: &mut ClipBox<ApplicationState, W>,
+        ctx: &mut UpdateCtx<'_, '_>,
+        old_data: &ApplicationState,
+        data: &ApplicationState,
+        env: &Env,
+    ) {
+        let label_size = child.content_size();
+        let viewport_size = child.viewport_size();
+
+        println!("{:?}", child.viewport());
+        println!("{:?}", child.viewport_origin());
+        println!("{:?}, {:?}", viewport_size, label_size);
+
+        let rect = Rect::new(
+            label_size.width - viewport_size.width,
+            0.0,
+            label_size.width,
+            label_size.height,
+        );
+        let changed = child.pan_to_visible(rect);
+
+        println!("{}", changed);
+
+        child.update(ctx, old_data, data, env);
     }
 }
 
@@ -290,26 +327,34 @@ fn build_root_widget() -> impl Widget<ApplicationState> {
     // set up the fonts - requires that Noto Sans CJK JP is installed
     let noto_cjk = FontFamily::new_unchecked("Noto Sans CJK JP");
     let primary_font = FontDescriptor::new(noto_cjk.clone()).with_size(64.0);
-    let secondary_font = FontDescriptor::new(noto_cjk.clone()).with_size(48.0);
+    let secondary_font = FontDescriptor::new(noto_cjk).with_size(48.0);
 
     // create the labels
-    let left_label =
-        Label::new(|data: &ApplicationState, _env: &Env| format!("{}", data.line_start))
-            .with_font(secondary_font.clone())
-            .with_text_color(BACKGROUND_TEXT_COLOR);
+    let left_label = Align::right(
+        ClipBox::new(
+            Label::new(|data: &ApplicationState, _env: &Env| data.line_start.to_string())
+                .with_font(secondary_font.clone())
+                .with_text_color(BACKGROUND_TEXT_COLOR)
+                .with_line_break_mode(LineBreaking::Clip)
+                .with_text_alignment(TextAlignment::Center),
+        )
+        .controller(RightJustifiedController),
+    );
     let center_label =
-        Label::new(|data: &ApplicationState, _env: &Env| format!("{}", data.line_middle))
-            .with_font(primary_font.clone());
-    let right_label =
-        Label::new(|data: &ApplicationState, _env: &Env| format!("{}", data.line_end))
-            .with_font(secondary_font.clone())
-            .with_text_color(BACKGROUND_TEXT_COLOR);
+        Label::new(|data: &ApplicationState, _env: &Env| data.line_middle.to_string())
+            .with_font(primary_font)
+            .with_text_alignment(TextAlignment::Center);
+    let right_label = Label::new(|data: &ApplicationState, _env: &Env| data.line_end.to_string())
+        .with_font(secondary_font)
+        .with_text_color(BACKGROUND_TEXT_COLOR)
+        .with_line_break_mode(LineBreaking::Clip)
+        .with_text_alignment(TextAlignment::End);
 
     let layout = Flex::row()
         .must_fill_main_axis(true)
         .main_axis_alignment(MainAxisAlignment::Center)
         .cross_axis_alignment(CrossAxisAlignment::Center)
-        .with_flex_child(WidgetExt::expand_width(Align::right(left_label)), 1.0)
+        .with_flex_child(WidgetExt::expand_width(left_label), 1.0)
         .with_spacer(HORIZONTAL_WIDGET_SPACING)
         .with_flex_child(WidgetExt::expand_width(Align::centered(center_label)), 1.0)
         .with_spacer(HORIZONTAL_WIDGET_SPACING)
