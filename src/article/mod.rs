@@ -84,5 +84,4 @@ impl Article {
             })
         }
     }
-
 }

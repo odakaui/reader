@@ -1,0 +1,35 @@
+Punctuation (PUNCT)
+
+Punctuation tokens are legal until a non punctuation character is added.
+    Once a non punctuation character is added, if another punctuation character is added, the word will end before the next non punctuation character.
+
+    "。。。ああああああ。。あ" 
+
+    The word will end right before the last "a" character.
+    Once the word contains both a non punctuation character and a punctuation character, punctuation becomes the only legal character.
+
+
+
+Terms (VERB, NOUN, ADJ, ADJNOUN)
+
+A term token is legal until a term is added.
+    Once a term is added, the word will end before the next term.
+    Only one term is allowed per word.
+
+
+
+Filler
+
+Filler tokens are always legal unless another rule states otherwise.
+
+
+
+Exceptions
+
+@TODO
+
+
+
+Unknown
+
+@TODO

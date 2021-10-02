@@ -54,23 +54,22 @@ impl AppDelegate<ApplicationState> for Delegate {
             Handled::No
         }
     }
-    
 }
 
 impl Delegate {
     fn update_application_state(data: &mut ApplicationState) {
-            let next_position = data.article.next_position(&data.position);
+        let next_position = data.article.next_position(&data.position);
 
-            match next_position {
-                Some(p) => {
-                    data.line_start = data.article.calculate_start(&p);
-                    data.line_middle = data.article.calculate_middle(&p);
-                    data.line_end = data.article.calculate_end(&p);
+        match next_position {
+            Some(p) => {
+                data.line_start = data.article.calculate_start(&p);
+                data.line_middle = data.article.calculate_middle(&p);
+                data.line_end = data.article.calculate_end(&p);
 
-                    data.position = p
-                }
-                None => println!("EOF"),
+                data.position = p
             }
+            None => println!("EOF"),
+        }
     }
 }
 struct RightJustifiedController;
