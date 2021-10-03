@@ -13,6 +13,7 @@ pub mod compressor;
 pub mod database;
 pub mod token;
 pub mod tokenizer;
+pub mod reader;
 
 fn read_file(path: &Path) -> Result<String> {
     let f = File::open(path)?;
@@ -52,36 +53,19 @@ pub fn main() -> Result<()> {
         lines: tokenized_lines,
     };
 
-    for line in article.lines {
-        let words = compressor::compress_line(&line);
+    // create the initial app state
+    let position = Position { index: 0, line: 0 };
 
-        for word in words {
-            println!(
-                "{}    {:?}",
-                word.text,
-                word.tokens
-                    .iter()
-                    .map(|x| x.pos.clone())
-                    .collect::<Vec<POS>>()
-            );
-        }
+    let initial_state = ApplicationState {
+        line_start: reader::calculate_start(&article, &position),
+        line_middle: reader::calculate_middle(&article, &position),
+        line_end: reader::calculate_end(&article, &position),
+        position,
+        font: None,
+        article,
+    };
 
-        println!()
-    }
-
-    // // create the initial app state
-    // let position = Position { index: 0, line: 0 };
-
-    // let initial_state = ApplicationState {
-    //     line_start: article.calculate_start(&position),
-    //     line_middle: article.calculate_middle(&position),
-    //     line_end: article.calculate_end(&position),
-    //     position,
-    //     font: None,
-    //     article,
-    // };
-
-    // launch_app(initial_state)?;
+    launch_app(initial_state)?;
 
     Ok(())
 }

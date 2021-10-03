@@ -8,6 +8,7 @@ use druid::{
     Handled, Key, Lens, LocalizedString, MenuDesc, MenuItem, RawMods, Rect, Selector, Target,
     TextAlignment, UpdateCtx, Widget, WidgetExt, WindowDesc,
 };
+use crate::reader;
 
 const HORIZONTAL_WIDGET_SPACING: f64 = 64.0;
 const BACKGROUND_TEXT_COLOR: Key<Color> = Key::new("background-text-color");
@@ -58,13 +59,13 @@ impl AppDelegate<ApplicationState> for Delegate {
 
 impl Delegate {
     fn update_application_state(data: &mut ApplicationState) {
-        let next_position = data.article.next_position(&data.position);
+        let next_position = reader::next_position(&data.article, &data.position);
 
         match next_position {
             Some(p) => {
-                data.line_start = data.article.calculate_start(&p);
-                data.line_middle = data.article.calculate_middle(&p);
-                data.line_end = data.article.calculate_end(&p);
+                data.line_start = reader::calculate_start(&data.article, &p);
+                data.line_middle = reader::calculate_middle(&data.article, &p);
+                data.line_end = reader::calculate_end(&data.article, &p);
 
                 data.position = p
             }
