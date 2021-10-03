@@ -1,3 +1,4 @@
+use crate::reader;
 use crate::{Article, Position};
 use anyhow::Result;
 use druid::widget::{
@@ -5,10 +6,12 @@ use druid::widget::{
 };
 use druid::{
     AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, FontDescriptor, FontFamily,
-    Handled, Key, Lens, LocalizedString, MenuDesc, MenuItem, RawMods, Rect, Selector, Target,
+    Handled, Key, Lens, LocalizedString, MenuDesc, MenuItem, Point, RawMods, Selector, Target,
     TextAlignment, UpdateCtx, Widget, WidgetExt, WindowDesc,
 };
-use crate::reader;
+use right_aligned_label::RightAlignedLabel;
+
+mod right_aligned_label;
 
 const HORIZONTAL_WIDGET_SPACING: f64 = 64.0;
 const BACKGROUND_TEXT_COLOR: Key<Color> = Key::new("background-text-color");
@@ -73,34 +76,6 @@ impl Delegate {
         }
     }
 }
-struct RightJustifiedController;
-
-impl<W: Widget<ApplicationState>> Controller<ApplicationState, ClipBox<ApplicationState, W>>
-    for RightJustifiedController
-{
-    fn update(
-        &mut self,
-        child: &mut ClipBox<ApplicationState, W>,
-        ctx: &mut UpdateCtx<'_, '_>,
-        old_data: &ApplicationState,
-        data: &ApplicationState,
-        env: &Env,
-    ) {
-        let label_size = child.content_size();
-        let viewport_size = child.viewport_size();
-
-        let rect = Rect::new(
-            label_size.width - viewport_size.width,
-            0.0,
-            label_size.width,
-            label_size.height,
-        );
-
-        child.pan_to_visible(rect);
-
-        child.update(ctx, old_data, data, env);
-    }
-}
 
 pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
     // describe the main window
@@ -158,30 +133,24 @@ fn build_root_widget() -> impl Widget<ApplicationState> {
     let secondary_font = FontDescriptor::new(noto_cjk).with_size(48.0);
 
     // create the labels
-    let left_label = Align::right(
-        ClipBox::new(
-            Label::new(|data: &ApplicationState, _env: &Env| data.line_start.to_string())
-                .with_font(secondary_font.clone())
-                .with_text_color(BACKGROUND_TEXT_COLOR)
-                .with_line_break_mode(LineBreaking::Clip)
-                .with_text_alignment(TextAlignment::Center),
-        )
-        .controller(RightJustifiedController),
+    let left_label = RightAlignedLabel::new(
+        Label::new(|data: &ApplicationState, _env: &Env| data.line_start.to_string())
+            .with_font(secondary_font.clone())
+            .with_text_color(BACKGROUND_TEXT_COLOR),
     );
+
     let center_label =
         Label::new(|data: &ApplicationState, _env: &Env| data.line_middle.to_string())
-            .with_font(primary_font)
-            .with_text_alignment(TextAlignment::Center);
+            .with_font(primary_font);
+
     let right_label = Label::new(|data: &ApplicationState, _env: &Env| data.line_end.to_string())
         .with_font(secondary_font)
-        .with_text_color(BACKGROUND_TEXT_COLOR)
-        .with_line_break_mode(LineBreaking::Clip)
-        .with_text_alignment(TextAlignment::End);
+        .with_text_color(BACKGROUND_TEXT_COLOR);
 
     let layout = Flex::row()
         .must_fill_main_axis(true)
-        .main_axis_alignment(MainAxisAlignment::Center)
-        .cross_axis_alignment(CrossAxisAlignment::Center)
+        // .main_axis_alignment(MainAxisAlignment::Center)
+        // .cross_axis_alignment(CrossAxisAlignment::Center)
         .with_flex_child(WidgetExt::expand_width(left_label), 1.0)
         .with_spacer(HORIZONTAL_WIDGET_SPACING)
         .with_flex_child(WidgetExt::expand_width(Align::centered(center_label)), 1.0)

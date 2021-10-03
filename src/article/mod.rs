@@ -11,4 +11,3 @@ pub struct Article {
     pub file_name: String,
     pub lines: Vec<Line>,
 }
-

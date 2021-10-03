@@ -11,9 +11,9 @@ pub mod app;
 pub mod article;
 pub mod compressor;
 pub mod database;
+pub mod reader;
 pub mod token;
 pub mod tokenizer;
-pub mod reader;
 
 fn read_file(path: &Path) -> Result<String> {
     let f = File::open(path)?;

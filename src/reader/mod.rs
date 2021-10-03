@@ -1,20 +1,24 @@
 use crate::{compressor, Article, Position};
 
 // calculate the String to display in the left Label of the reader view
-pub fn calculate_start(article: &Article,  position: &Position) -> String {
+pub fn calculate_start(article: &Article, position: &Position) -> String {
     if position.index == 0 {
         "".to_string()
     } else {
         let words = compressor::compress_line(&article.lines[position.line]);
 
-        words[..position.index].iter().map(|x| x.text.to_string()).collect::<Vec<String>>().join("")
+        words[..position.index]
+            .iter()
+            .map(|x| x.text.to_string())
+            .collect::<Vec<String>>()
+            .join("")
     }
 }
 
 // calculate the String to display in the center Label of the reader view
 pub fn calculate_middle(article: &Article, position: &Position) -> String {
     let words = compressor::compress_line(&article.lines[position.line]);
-    
+
     words[position.index].text.to_string()
 }
 
@@ -25,7 +29,11 @@ pub fn calculate_end(article: &Article, position: &Position) -> String {
     if position.index >= words.len() {
         "".to_string()
     } else {
-        words[position.index + 1..].iter().map(|x| x.text.to_string()).collect::<Vec<String>>().join("")
+        words[position.index + 1..]
+            .iter()
+            .map(|x| x.text.to_string())
+            .collect::<Vec<String>>()
+            .join("")
     }
 }
 

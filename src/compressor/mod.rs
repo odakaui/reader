@@ -14,9 +14,7 @@ pub fn compress_line(line: &Line) -> Vec<Word> {
     let mut words: Vec<Word> = Vec::new();
 
     for token in tokens {
-        if is_legal(token, &stored) {
-            stored.push(token.clone());
-        } else {
+        if !is_legal(token, &stored) {
             let word = Word {
                 text: string_from_tokens(&stored),
                 tokens: stored.clone(),
@@ -25,8 +23,8 @@ pub fn compress_line(line: &Line) -> Vec<Word> {
             words.push(word);
 
             stored.clear();
-            stored.push(token.clone());
         }
+        stored.push(token.clone());
     }
 
     words
@@ -43,14 +41,10 @@ fn string_from_tokens(tokens: &[Token]) -> String {
 }
 
 fn is_legal(token: &Token, stored: &[Token]) -> bool {
-    let is_legal = is_punctuation(token)
+    is_punctuation(token)
         || (is_term(token) && term_legal(stored))
         || (is_filler(token) && filler_legal(stored))
-        || (is_unknown(token) && unknown_legal(stored));
-
-    println!("{}, {:?}", is_legal, token.pos);
-
-    is_legal
+        || (is_unknown(token) && unknown_legal(stored))
 }
 
 fn term_legal(stored: &[Token]) -> bool {
