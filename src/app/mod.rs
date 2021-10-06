@@ -1,6 +1,5 @@
-use crate::reader;
-use crate::{Article, Position};
-use anyhow::Result;
+use crate::{ApplicationState, Article, Operation, State, compressor, reader};
+use anyhow::{anyhow, Result};
 use druid::widget::{
     Align, ClipBox, Controller, CrossAxisAlignment, Flex, Label, LineBreaking, MainAxisAlignment,
 };
@@ -19,18 +18,6 @@ const WINDOW_TITLE: LocalizedString<ApplicationState> = LocalizedString::new("Re
 const SET_UNKNOWN: Selector<()> = Selector::new("set_unknown");
 const SET_KNOWN: Selector<()> = Selector::new("set_known");
 
-#[derive(Clone, Data, Lens)]
-pub struct ApplicationState {
-    pub line_start: String,
-    pub line_middle: String,
-    pub line_end: String,
-    pub font: Option<FontFamily>,
-    pub position: Position,
-
-    #[data(ignore)]
-    pub article: Article,
-}
-
 struct Delegate;
 
 impl AppDelegate<ApplicationState> for Delegate {
@@ -45,13 +32,11 @@ impl AppDelegate<ApplicationState> for Delegate {
         if cmd.is(SET_UNKNOWN) {
             println!("Set Unknown");
 
-            Self::update_application_state(data);
-
             Handled::Yes
         } else if cmd.is(SET_KNOWN) {
             println!("Set Known");
 
-            Self::update_application_state(data);
+            Self::mark_known(data).expect("Mark Unknown failed.");
 
             Handled::Yes
         } else {
@@ -61,19 +46,38 @@ impl AppDelegate<ApplicationState> for Delegate {
 }
 
 impl Delegate {
-    fn update_application_state(data: &mut ApplicationState) {
-        let next_position = reader::next_position(&data.article, &data.position);
+    fn mark_known(data: &mut ApplicationState) -> Result<()> {
+        let article = &data.article;
+        let current_state = data.current_state.as_ref().expect("Failed to unwrap current_state");
 
-        match next_position {
-            Some(p) => {
-                data.line_start = reader::calculate_start(&data.article, &p);
-                data.line_middle = reader::calculate_middle(&data.article, &p);
-                data.line_end = reader::calculate_end(&data.article, &p);
+        let current_position = &current_state.position;
 
-                data.position = p
-            }
-            None => println!("EOF"),
+        if let None = current_position {
+            println!("EOF reached. Implementation TODO.");
+            return Ok(())
         }
+
+        let next_position = reader::next_position(&article, &current_state);
+
+        let file_id = article.id;
+        let total = current_state.total + compressor::compress(&article, &current_state).tokens.len() as i32;
+        let next_operation_num = current_state.operation_num + 1;
+        let action = Operation::MarkKnown;
+
+        // move current_state to undo_stack
+        data.undo_stack.push(current_state.clone());
+        data.current_state = Some(State {
+            file_id,
+            position: next_position,
+            operation_num: next_operation_num,
+            total,
+            unknown: current_state.unknown,
+            action,
+        });
+
+        dbg!("{:?}", &data.undo_stack);
+
+        Ok(())
     }
 }
 
@@ -134,16 +138,16 @@ fn build_root_widget() -> impl Widget<ApplicationState> {
 
     // create the labels
     let left_label = RightAlignedLabel::new(
-        Label::new(|data: &ApplicationState, _env: &Env| data.line_start.to_string())
+        Label::new(|data: &ApplicationState, _env: &Env| reader::start(data))
             .with_font(secondary_font.clone())
             .with_text_color(BACKGROUND_TEXT_COLOR),
     );
 
     let center_label =
-        Label::new(|data: &ApplicationState, _env: &Env| data.line_middle.to_string())
+        Label::new(|data: &ApplicationState, _env: &Env| reader::middle(data))
             .with_font(primary_font);
 
-    let right_label = Label::new(|data: &ApplicationState, _env: &Env| data.line_end.to_string())
+    let right_label = Label::new(|data: &ApplicationState, _env: &Env| reader::end(data))
         .with_font(secondary_font)
         .with_text_color(BACKGROUND_TEXT_COLOR);
 

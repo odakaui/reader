@@ -1,11 +1,25 @@
-use crate::{compressor, Article, Position};
+use crate::{compressor, Article, ApplicationState, Position, State};
 
 // calculate the String to display in the left Label of the reader view
-pub fn calculate_start(article: &Article, position: &Position) -> String {
+pub fn start(app_state: &ApplicationState) -> String {
+    // return an empty string if current_state is none
+    if app_state.current_state.is_none() {
+        return "".to_string()
+    }
+
+    let current_state = app_state.current_state.as_ref().unwrap();
+
+    // return an empty string if position is none (meaning eof)
+    if current_state.position.is_none() {
+        return "".to_string()
+    }
+
+    let position = current_state.position.as_ref().unwrap();
+
     if position.index == 0 {
         "".to_string()
     } else {
-        let words = compressor::compress_line(&article.lines[position.line]);
+        let words = compressor::compress_line(&app_state.article, current_state);
 
         words[..position.index]
             .iter()
@@ -16,15 +30,41 @@ pub fn calculate_start(article: &Article, position: &Position) -> String {
 }
 
 // calculate the String to display in the center Label of the reader view
-pub fn calculate_middle(article: &Article, position: &Position) -> String {
-    let words = compressor::compress_line(&article.lines[position.line]);
+pub fn middle(app_state: &ApplicationState) -> String {
+    // return an empty string if current_state is none
+    if app_state.current_state.is_none() {
+        return "".to_string()
+    }
 
-    words[position.index].text.to_string()
+    let current_state = app_state.current_state.as_ref().unwrap();
+
+    // return an empty string if position is none (meaning eof)
+    if current_state.position.is_none() {
+        return "EOF".to_string()
+    }
+
+    let word = compressor::compress(&app_state.article, current_state);
+
+    word.text
 }
 
 // calculate the String to display in the right Label of the reader view
-pub fn calculate_end(article: &Article, position: &Position) -> String {
-    let words = compressor::compress_line(&article.lines[position.line]);
+pub fn end(app_state: &ApplicationState) -> String {
+    // return an empty string if current_state is none
+    if app_state.current_state.is_none() {
+        return "".to_string()
+    }
+
+    let current_state = app_state.current_state.as_ref().unwrap();
+
+    // return an empty string if position is none (meaning eof)
+    if current_state.position.is_none() {
+        return "".to_string()
+    }
+
+    let position = current_state.position.as_ref().unwrap();
+
+    let words = compressor::compress_line(&app_state.article, current_state);
 
     if position.index >= words.len() {
         "".to_string()
@@ -39,9 +79,11 @@ pub fn calculate_end(article: &Article, position: &Position) -> String {
 
 // calculate the next available index
 // returns None if the next position is past the end of the file
-pub fn next_position(article: &Article, current_position: &Position) -> Option<Position> {
+pub fn next_position(article: &Article, state: &State) -> Option<Position> {
+    let current_position = state.position.as_ref().expect("Failed to unwrap position");
+
     let article_length = article.lines.len();
-    let line_length = compressor::compress_line(&article.lines[current_position.line]).len();
+    let line_length = compressor::compress_line(&article, state).len();
 
     let mut is_eof = false;
 

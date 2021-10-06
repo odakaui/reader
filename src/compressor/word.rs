@@ -1,6 +1,6 @@
 use crate::Token;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Word {
     pub text: String,
     pub tokens: Vec<Token>,

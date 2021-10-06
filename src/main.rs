@@ -1,15 +1,18 @@
 use anyhow::{anyhow, Result};
-use app::{launch_app, ApplicationState};
-use article::{Article, Line, Position};
+use app::launch_app;
+use article::{Article, Line};
 use database::Database;
 use std::fs;
 use std::io::{prelude::*, BufReader};
 use std::path::Path;
 use token::{Token, POS};
 use tokenizer::Tokenizer;
-use ron;
+
+pub use state::{Operation, Position, State};
+pub use application_state::ApplicationState;
 
 pub mod app;
+pub mod application_state;
 pub mod article;
 pub mod compressor;
 pub mod database;
@@ -17,6 +20,7 @@ pub mod file;
 pub mod reader;
 pub mod token;
 pub mod tokenizer;
+pub mod state;
 
 fn read_file(path: &Path) -> Result<String> {
     let f = fs::File::open(path)?;
@@ -82,15 +86,13 @@ fn import(db: &mut Database, import_dir: &Path, file: &Path) -> Result<()> {
     };
 
     db.insert_file(&f)?;
+    let f = &db.select_files_for_name(&name)?[0];
 
     // add the file to the file folder
     let contents = read_file(file)?;
     let clean_lines = clean(&contents);
     let import_path = import_dir.join(&name);
     let mut tokenizer = Tokenizer::new()?;
-
-
-    dbg!(&clean_lines);
 
     let mut tokenized_lines: Vec<Line> = Vec::new();
     for x in clean_lines.iter() {
@@ -103,7 +105,7 @@ fn import(db: &mut Database, import_dir: &Path, file: &Path) -> Result<()> {
         tokenized_lines.push(line);
     }
 
-    let article = Article::new(&name, &tokenized_lines);
+    let article = Article::new(f.id.unwrap() as i32, &name, &tokenized_lines);
     
     fs::write(import_path, ron::to_string(&article)?)?;
 
@@ -132,22 +134,34 @@ pub fn main() -> Result<()> {
 
     let mut db = Database::new(&db_path)?;
 
+    // import the file
     import(&mut db, &imported_dir, &test_file)?; 
 
     let name = file_name(&test_file)?;
+
+    // open the file
     let article = open(&imported_dir, &name)?;
 
-    println!("{:?}", article);
+    // get the file id
+    let file = &db.select_files_for_name(&name)?[0];
 
     // create the initial app state
     let position = Position { index: 0, line: 0 };
 
+    let current_state = State {
+        file_id: file.id.expect("Failed to unwrap file id"),
+        position: Some(position),
+        operation_num: 0,
+        total: 0,
+        unknown: 0,
+        action: Operation::MarkKnown,
+    };
+
     let initial_state = ApplicationState {
-        line_start: reader::calculate_start(&article, &position),
-        line_middle: reader::calculate_middle(&article, &position),
-        line_end: reader::calculate_end(&article, &position),
-        position,
         font: None,
+        current_state: Some(current_state),
+        redo_stack: Vec::new(),
+        undo_stack: Vec::new(),
         article,
     };
 
