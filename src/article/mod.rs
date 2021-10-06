@@ -8,6 +8,15 @@ mod position;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Article {
-    pub file_name: String,
+    pub name: String,
     pub lines: Vec<Line>,
+}
+
+impl Article {
+    pub fn new(name: &str, lines: &Vec<Line>) -> Self {
+        Article {
+            name: name.into(),
+            lines: lines.clone(),
+        }
+    }
 }

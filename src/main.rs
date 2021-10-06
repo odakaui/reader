@@ -1,22 +1,25 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use app::{launch_app, ApplicationState};
 use article::{Article, Line, Position};
-use std::fs::File;
+use database::Database;
+use std::fs;
 use std::io::{prelude::*, BufReader};
 use std::path::Path;
 use token::{Token, POS};
 use tokenizer::Tokenizer;
+use ron;
 
 pub mod app;
 pub mod article;
 pub mod compressor;
 pub mod database;
+pub mod file;
 pub mod reader;
 pub mod token;
 pub mod tokenizer;
 
 fn read_file(path: &Path) -> Result<String> {
-    let f = File::open(path)?;
+    let f = fs::File::open(path)?;
     let mut buf = BufReader::new(f);
     let mut contents = String::new();
     buf.read_to_string(&mut contents)?;
@@ -24,18 +27,70 @@ fn read_file(path: &Path) -> Result<String> {
     Ok(contents)
 }
 
-pub fn main() -> Result<()> {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("resources/japanese.txt");
-    let contents = read_file(&path)?;
+fn write_file(path: &Path, text: &str) -> Result<()> {
+    fs::write(path, text)?;
 
-    let lines = contents.lines();
-    let clean_lines: Vec<String> = lines
+    Ok(())
+}
+
+fn create_dir(path: &Path) -> Result<()> {
+    if !path.exists() {
+        fs::create_dir_all(path)?;
+    }
+
+    Ok(())
+}
+
+fn clean(text: &str) -> Vec<String> {
+    let lines = text.lines();
+
+    lines
         .map(|x| x.chars().filter(|c| !c.is_whitespace()).collect())
-        .filter(|x| x != "")
-        .collect();
+        .filter(|x: &String| !x.is_empty())
+        .collect()
+}
 
+fn file_stem(path: &Path) -> Result<String> {
+    Ok(path
+        .file_stem()
+        .ok_or(anyhow!("Failed to parse file name."))?
+        .to_str()
+        .ok_or(anyhow!("Failed to convert file name."))?
+        .to_string())
+}
+
+fn file_name(path: &Path) -> Result<String> {
+    Ok(path
+        .file_name()
+        .ok_or(anyhow!("Failed to parse file name."))?
+        .to_str()
+        .ok_or(anyhow!("Failed to convert file name."))?
+        .to_string())
+}
+
+// Import a file into the share folder. Will overwrite any files with the same name.
+fn import(db: &mut Database, import_dir: &Path, file: &Path) -> Result<()> {
+    // create share directory
+    create_dir(import_dir)?;
+
+    // add the file to the database
+    let name = file_name(file)?;
+    let f = file::File {
+        id: None,
+        name: name.clone(),
+        eof: false,
+    };
+
+    db.insert_file(&f)?;
+
+    // add the file to the file folder
+    let contents = read_file(file)?;
+    let clean_lines = clean(&contents);
+    let import_path = import_dir.join(&name);
     let mut tokenizer = Tokenizer::new()?;
-    let file_name = path.file_stem().unwrap().to_str().unwrap();
+
+
+    dbg!(&clean_lines);
 
     let mut tokenized_lines: Vec<Line> = Vec::new();
     for x in clean_lines.iter() {
@@ -48,10 +103,41 @@ pub fn main() -> Result<()> {
         tokenized_lines.push(line);
     }
 
-    let article = Article {
-        file_name: file_name.into(),
-        lines: tokenized_lines,
-    };
+    let article = Article::new(&name, &tokenized_lines);
+    
+    fs::write(import_path, ron::to_string(&article)?)?;
+
+    Ok(())
+}
+
+fn open(import_dir: &Path, name: &str) -> Result<Article> {
+    let path = import_dir.join(name);
+
+    if !path.exists() {
+        return Err(anyhow!("The file {} does not exist.", name));
+    }
+
+    let article = ron::from_str(&String::from_utf8(fs::read(path)?)?)?;
+
+    Ok(article)
+}
+
+pub fn main() -> Result<()> {
+    let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("resources");
+
+    let share = resources.join("share");
+    let db_path = share.join("reader.db");
+    let imported_dir = share.join("imported");
+    let test_file = resources.join("japanese.txt");
+
+    let mut db = Database::new(&db_path)?;
+
+    import(&mut db, &imported_dir, &test_file)?; 
+
+    let name = file_name(&test_file)?;
+    let article = open(&imported_dir, &name)?;
+
+    println!("{:?}", article);
 
     // create the initial app state
     let position = Position { index: 0, line: 0 };

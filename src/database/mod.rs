@@ -66,11 +66,12 @@
 /// * `unknown` - The total number of times a token was marked as unknown by the user during a given read through
 /// * `total` - The total number of times the token was scene by the user during a given read through
 use anyhow::Result;
-use create::*;
 use rusqlite::Connection;
 use std::path::Path;
 
 mod create;
+mod insert;
+mod select;
 
 pub struct Database {
     conn: Connection,
@@ -87,14 +88,4 @@ impl Database {
         return Ok(db);
     }
 
-    fn initialize(&self) -> Result<()> {
-        create_files(&self.conn)?;
-        create_tokens(&self.conn)?;
-        create_state(&self.conn)?;
-        create_history(&self.conn)?;
-        create_history_tokens(&self.conn)?;
-        create_file_tokens(&self.conn)?;
-
-        Ok(())
-    }
 }

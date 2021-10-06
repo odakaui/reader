@@ -1,10 +1,23 @@
+use super::Database;
+use crate::file::File;
 use anyhow::Result;
-use rusqlite::{Connection, params, Statement};
+use rusqlite::{params, Connection};
 
-pub fn insert_files(conn: &Connection, files: Vec<File>) -> Result<()> {
-    for file in files.iter() {
-        conn.execute(r#"INSERT INTO files (name, eof) VALUES (?1, ?2)"#, params![file.name, file.eof])?;
+impl Database {
+    pub fn insert_file(&self, file: &File) -> Result<()> {
+        self.insert_files(vec![file])?;
+
+        Ok(())
     }
 
-    Ok(())
+    pub fn insert_files(&self, files: Vec<&File>) -> Result<()> {
+        for file in files.iter() {
+            self.conn.execute(
+                r#"INSERT OR IGNORE INTO files (name, eof) VALUES (?1, ?2)"#,
+                params![file.name, file.eof],
+            )?;
+        }
+
+        Ok(())
+    }
 }
