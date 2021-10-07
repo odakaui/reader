@@ -1,5 +1,6 @@
-use crate::{Article, History, State};
+use crate::{Article, Database, History, State};
 use druid::{Data, FontFamily, Lens};
+use std::{cell::RefCell, rc::Rc};
 
 #[derive(Clone, Data, Lens)]
 pub struct ApplicationState {
@@ -17,4 +18,8 @@ pub struct ApplicationState {
 
     #[data(ignore)]
     pub history: History,
+
+    #[data(ignore)]
+    pub database: Rc<RefCell<Database>>,
+
 }

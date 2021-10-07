@@ -1,8 +1,7 @@
 use super::Database;
-use crate::{file::File, History};
+use crate::{database::HistoryToken, file::File, History, Token};
 use anyhow::Result;
 use rusqlite::params;
-use std::boxed::Box;
 
 impl Database {
     pub fn is_file(&mut self, name: &str) -> Result<bool> {
@@ -37,6 +36,34 @@ impl Database {
                     start_date: row.get(2)?,
                     end_date,
                 })
+            },
+        )?)
+    }
+
+    pub fn select_id_for_token(&self, token: &Token) -> Result<i32> {
+        Ok(self.conn.query_row(
+            r#"SELECT id FROM tokens WHERE lemma=? AND pos=?"#,
+            params![token.lemma, token.pos.to_int()],
+            |row| row.get(0),
+        )?)
+    }
+
+    pub fn select_history_token_for_history_id_and_token_id(
+        &self,
+        history_id: i32,
+        token_id: i32,
+    ) -> Result<HistoryToken> {
+        Ok(self.conn.query_row(
+            r#"SELECT history_id, token_id, total_unknown, total_seen FROM historytokens 
+                WHERE history_id=? AND token_id=?"#,
+            params![history_id, token_id],
+            |row| {
+                Ok(HistoryToken::new(
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                ))
             },
         )?)
     }

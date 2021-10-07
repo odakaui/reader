@@ -48,6 +48,7 @@ impl AppDelegate<ApplicationState> for Delegate {
 impl Delegate {
     fn mark_known(data: &mut ApplicationState) -> Result<()> {
         let article = &data.article;
+        let history = &data.history;
         let current_state = data
             .current_state
             .as_ref()
@@ -55,16 +56,22 @@ impl Delegate {
 
         let current_position = &current_state.position;
 
-        if let None = current_position {
+        if  current_position.is_none() {
             println!("EOF reached. Implementation TODO.");
             return Ok(());
         }
 
-        let next_position = reader::next_position(&article, &current_state);
+        let next_position = reader::next_position(article, current_state);
 
         let file_id = article.id;
         let next_operation_num = current_state.operation_num + 1;
         let action = Operation::MarkKnown;
+
+        // add the current word's tokens to the database
+        let database = &data.database.borrow_mut();
+        let current_word = compressor::compress(article, current_state);
+
+        database.insert_tokens_for_history(history, current_word.tokens, false)?;
 
         // move current_state to undo_stack
         data.undo_stack.push(current_state.clone());

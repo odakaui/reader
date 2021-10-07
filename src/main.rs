@@ -3,6 +3,8 @@ use app::launch_app;
 use article::{Article, Line};
 use database::Database;
 use std::fs;
+use std::rc::Rc;
+use std::cell::RefCell;
 use std::io::{prelude::*, BufReader};
 use std::path::Path;
 use token::{Token, POS};
@@ -109,7 +111,7 @@ fn import(db: &mut Database, import_dir: &Path, file: &Path) -> Result<()> {
     Ok(())
 }
 
-fn open(db: &mut Database, import_dir: &Path, name: &str) -> Result<ApplicationState> {
+fn open(database: Rc<RefCell<Database>>, import_dir: &Path, name: &str) -> Result<ApplicationState> {
     let path = import_dir.join(name);
 
     if !path.exists() {
@@ -117,6 +119,8 @@ fn open(db: &mut Database, import_dir: &Path, name: &str) -> Result<ApplicationS
     }
 
     let article = ron::from_str(&String::from_utf8(fs::read(path)?)?)?;
+
+    let db = database.borrow_mut();
 
     // get the file id
     let file = db.select_file_for_name(name)?;
@@ -143,6 +147,7 @@ fn open(db: &mut Database, import_dir: &Path, name: &str) -> Result<ApplicationS
         undo_stack: Vec::new(),
         article,
         history,
+        database: database.clone(),
     };
 
     Ok(app_state)
@@ -156,15 +161,15 @@ pub fn main() -> Result<()> {
     let imported_dir = share.join("imported");
     let test_file = resources.join("japanese.txt");
 
-    let mut db = Database::new(&db_path)?;
+    let database = Rc::new(RefCell::new(Database::new(&db_path)?));
 
     // import the file
-    import(&mut db, &imported_dir, &test_file)?;
+    import(&mut database.borrow_mut(), &imported_dir, &test_file)?;
 
     let name = file_name(&test_file)?;
 
     // open the file
-    let initial_state = open(&mut db, &imported_dir, &name)?;
+    let initial_state = open(database, &imported_dir, &name)?;
 
     launch_app(initial_state)?;
 

@@ -59,9 +59,13 @@ use anyhow::Result;
 use rusqlite::Connection;
 use std::path::Path;
 
+pub use history_token::HistoryToken;
+
 mod create;
+mod history_token;
 mod insert;
 mod select;
+mod update;
 
 pub struct Database {
     conn: Connection,
