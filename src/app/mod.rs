@@ -17,6 +17,8 @@ const BACKGROUND_TEXT_COLOR: Key<Color> = Key::new("background-text-color");
 const WINDOW_TITLE: LocalizedString<ApplicationState> = LocalizedString::new("Reader");
 const SET_UNKNOWN: Selector<()> = Selector::new("set_unknown");
 const SET_KNOWN: Selector<()> = Selector::new("set_known");
+const UNDO: Selector<()> = Selector::new("undo");
+const REDO: Selector<()> = Selector::new("redo");
 
 struct Delegate;
 
@@ -32,13 +34,15 @@ impl AppDelegate<ApplicationState> for Delegate {
         if cmd.is(SET_UNKNOWN) {
             println!("Set Unknown");
 
-            self.add_tokens(data, Operation::MarkUnknown).expect("Set Unknown failed.");
+            self.add_tokens(data, Operation::MarkUnknown)
+                .expect("Set Unknown failed.");
 
             Handled::Yes
         } else if cmd.is(SET_KNOWN) {
             println!("Set Known");
 
-            self.add_tokens(data, Operation::MarkKnown).expect("Set Known failed.");
+            self.add_tokens(data, Operation::MarkKnown)
+                .expect("Set Known failed.");
 
             Handled::Yes
         } else {
@@ -58,7 +62,7 @@ impl Delegate {
 
         let current_position = &current_state.position;
 
-        if  current_position.is_none() {
+        if current_position.is_none() {
             println!("EOF reached. Implementation TODO.");
             return Ok(());
         }
@@ -106,6 +110,23 @@ pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
                         )
                         .hotkey(RawMods::Ctrl, "o"),
                     ),
+                )
+                .append(
+                    MenuDesc::new(LocalizedString::new("Edit"))
+                        .append(
+                            MenuItem::new(
+                                LocalizedString::new("Undo"),
+                                Command::new(UNDO, (), Target::Auto),
+                            )
+                            .hotkey(RawMods::Ctrl, "z"),
+                        )
+                        .append(
+                            MenuItem::new(
+                                LocalizedString::new("Redo"),
+                                Command::new(REDO, (), Target::Auto),
+                            )
+                            .hotkey(RawMods::Ctrl, "y"),
+                        ),
                 )
                 .append(
                     MenuDesc::new(LocalizedString::new("Reader"))

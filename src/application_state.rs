@@ -21,5 +21,4 @@ pub struct ApplicationState {
 
     #[data(ignore)]
     pub database: Rc<RefCell<Database>>,
-
 }

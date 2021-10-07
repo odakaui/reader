@@ -2,11 +2,11 @@ use anyhow::{anyhow, Result};
 use app::launch_app;
 use article::{Article, Line};
 use database::Database;
-use std::fs;
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::fs;
 use std::io::{prelude::*, BufReader};
 use std::path::Path;
+use std::rc::Rc;
 use token::{Token, POS};
 use tokenizer::Tokenizer;
 
@@ -111,7 +111,11 @@ fn import(db: &mut Database, import_dir: &Path, file: &Path) -> Result<()> {
     Ok(())
 }
 
-fn open(database: Rc<RefCell<Database>>, import_dir: &Path, name: &str) -> Result<ApplicationState> {
+fn open(
+    database: Rc<RefCell<Database>>,
+    import_dir: &Path,
+    name: &str,
+) -> Result<ApplicationState> {
     let path = import_dir.join(name);
 
     if !path.exists() {
@@ -159,7 +163,7 @@ pub fn main() -> Result<()> {
     let share = resources.join("share");
     let db_path = share.join("reader.db");
     let imported_dir = share.join("imported");
-    let test_file = resources.join("japanese.txt");
+    let test_file = resources.join("short.txt");
 
     let database = Rc::new(RefCell::new(Database::new(&db_path)?));
 

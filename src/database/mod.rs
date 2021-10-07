@@ -27,13 +27,13 @@ impl Database {
     }
 
     pub fn add_tokens_known(&self, history: &History, tokens: Vec<Token>) -> Result<()> {
-        self.insert_tokens_for_history(history, tokens, false)?; 
+        self.insert_tokens_for_history(history, tokens, false)?;
 
         Ok(())
     }
 
     pub fn add_tokens_unknown(&self, history: &History, tokens: Vec<Token>) -> Result<()> {
-        self.insert_tokens_for_history(history, tokens, true)?; 
+        self.insert_tokens_for_history(history, tokens, true)?;
 
         Ok(())
     }
