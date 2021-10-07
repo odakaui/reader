@@ -53,6 +53,7 @@ impl Database {
                     history_token.total_seen += 1;
 
                     if is_unknown {
+                        println!("UNKNOWN");
                         history_token.total_unknown += 1;
                     }
 
@@ -64,14 +65,6 @@ impl Database {
 
                     self.insert_history_token(&history_token)?;
                 }
-            }
-            let mut history_token =
-                self.select_history_token_for_history_id_and_token_id(history_id, token_id)?;
-
-            history_token.total_seen += 1;
-
-            if is_unknown {
-                history_token.total_unknown += 1;
             }
         }
 

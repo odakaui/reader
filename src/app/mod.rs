@@ -32,11 +32,13 @@ impl AppDelegate<ApplicationState> for Delegate {
         if cmd.is(SET_UNKNOWN) {
             println!("Set Unknown");
 
+            self.add_tokens(data, Operation::MarkUnknown).expect("Set Unknown failed.");
+
             Handled::Yes
         } else if cmd.is(SET_KNOWN) {
             println!("Set Known");
 
-            Self::mark_known(data).expect("Mark Unknown failed.");
+            self.add_tokens(data, Operation::MarkKnown).expect("Set Known failed.");
 
             Handled::Yes
         } else {
@@ -46,7 +48,7 @@ impl AppDelegate<ApplicationState> for Delegate {
 }
 
 impl Delegate {
-    fn mark_known(data: &mut ApplicationState) -> Result<()> {
+    fn add_tokens(&self, data: &mut ApplicationState, action: Operation) -> Result<()> {
         let article = &data.article;
         let history = &data.history;
         let current_state = data
@@ -65,13 +67,15 @@ impl Delegate {
 
         let file_id = article.id;
         let next_operation_num = current_state.operation_num + 1;
-        let action = Operation::MarkKnown;
 
         // add the current word's tokens to the database
         let database = &data.database.borrow_mut();
         let current_word = compressor::compress(article, current_state);
 
-        database.insert_tokens_for_history(history, current_word.tokens, false)?;
+        match action {
+            Operation::MarkKnown => database.add_tokens_known(history, current_word.tokens)?,
+            Operation::MarkUnknown => database.add_tokens_unknown(history, current_word.tokens)?,
+        }
 
         // move current_state to undo_stack
         data.undo_stack.push(current_state.clone());
