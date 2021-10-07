@@ -11,5 +11,5 @@ pub struct State {
     pub file_id: i32,
     pub position: Option<Position>,
     pub operation_num: i32,
-    pub action: Operation,
+    pub action: Option<Operation>,
 }

@@ -10,6 +10,7 @@ mod history_token;
 mod insert;
 mod select;
 mod update;
+mod delete;
 
 pub struct Database {
     conn: Connection,
@@ -35,6 +36,18 @@ impl Database {
     pub fn add_tokens_unknown(&self, history: &History, tokens: Vec<Token>) -> Result<()> {
         self.insert_tokens_for_history(history, tokens, true)?;
 
+        Ok(())
+    }
+
+    pub fn remove_tokens_known(&self, history: &History, tokens: Vec<Token>) -> Result<()> {
+        self.delete_tokens_for_history(history, tokens, false)?;
+
+        Ok(())
+    }
+
+    pub fn remove_tokens_unknown(&self, history: &History, tokens: Vec<Token>) -> Result<()> {
+        self.delete_tokens_for_history(history, tokens, true)?;
+    
         Ok(())
     }
 }

@@ -140,7 +140,7 @@ fn open(
         file_id: file.id,
         position: Some(position),
         operation_num: 0,
-        action: Operation::MarkKnown,
+        action: None,
     };
 
     // setup the application state

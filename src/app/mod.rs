@@ -15,8 +15,8 @@ mod right_aligned_label;
 const HORIZONTAL_WIDGET_SPACING: f64 = 64.0;
 const BACKGROUND_TEXT_COLOR: Key<Color> = Key::new("background-text-color");
 const WINDOW_TITLE: LocalizedString<ApplicationState> = LocalizedString::new("Reader");
-const SET_UNKNOWN: Selector<()> = Selector::new("set_unknown");
-const SET_KNOWN: Selector<()> = Selector::new("set_known");
+const MARK_UNKNOWN: Selector<()> = Selector::new("MARK_UNKNOWN");
+const MARK_KNOWN: Selector<()> = Selector::new("MARK_KNOWN");
 const UNDO: Selector<()> = Selector::new("undo");
 const REDO: Selector<()> = Selector::new("redo");
 
@@ -31,21 +31,33 @@ impl AppDelegate<ApplicationState> for Delegate {
         data: &mut ApplicationState,
         _: &Env,
     ) -> Handled {
-        if cmd.is(SET_UNKNOWN) {
-            println!("Set Unknown");
+        if cmd.is(MARK_UNKNOWN) {
+            println!("Mark Unknown");
 
             self.add_tokens(data, Operation::MarkUnknown)
-                .expect("Set Unknown failed.");
+                .expect("Mark Unknown failed.");
 
             Handled::Yes
-        } else if cmd.is(SET_KNOWN) {
-            println!("Set Known");
+        } else if cmd.is(MARK_KNOWN) {
+            println!("Mark Known");
 
             self.add_tokens(data, Operation::MarkKnown)
-                .expect("Set Known failed.");
+                .expect("Mark Known failed.");
 
             Handled::Yes
-        } else {
+        } else if cmd.is(UNDO) {
+            println!("Undo");
+
+            self.undo(data).expect("[error] Undo failed.");
+
+            Handled::Yes
+        } else if cmd.is(REDO) {
+            println!("Redo");
+
+            Handled::Yes
+        }
+
+        else {
             Handled::No
         }
     }
@@ -55,10 +67,10 @@ impl Delegate {
     fn add_tokens(&self, data: &mut ApplicationState, action: Operation) -> Result<()> {
         let article = &data.article;
         let history = &data.history;
-        let current_state = data
+        let mut current_state = data
             .current_state
             .as_ref()
-            .expect("Failed to unwrap current_state");
+            .expect("Failed to unwrap current_state").clone();
 
         let current_position = &current_state.position;
 
@@ -67,14 +79,14 @@ impl Delegate {
             return Ok(());
         }
 
-        let next_position = reader::next_position(article, current_state);
+        let next_position = reader::next_position(article, &current_state);
 
         let file_id = article.id;
         let next_operation_num = current_state.operation_num + 1;
 
         // add the current word's tokens to the database
         let database = &data.database.borrow_mut();
-        let current_word = compressor::compress(article, current_state);
+        let current_word = compressor::compress(article, &current_state);
 
         match action {
             Operation::MarkKnown => database.add_tokens_known(history, current_word.tokens)?,
@@ -82,15 +94,49 @@ impl Delegate {
         }
 
         // move current_state to undo_stack
+        current_state.action = Some(action);
+
         data.undo_stack.push(current_state.clone());
         data.current_state = Some(State {
             file_id,
             position: next_position,
             operation_num: next_operation_num,
-            action,
+            action: None,
         });
 
         dbg!("{:?}", &data.undo_stack);
+
+        Ok(())
+    }
+
+    fn undo(&self, data: &mut ApplicationState) -> Result<()> {
+        let database = data.database.borrow_mut();
+
+        // @TODO add error handling
+        if data.current_state.is_none() || data.undo_stack.is_empty() {
+            println!("[warning] The undo stack is empty.");
+
+            return Ok(())
+        }
+
+        let current_state = data.current_state.as_ref().expect("Failed to unwrap current_state");
+        let previous_state = data.undo_stack.pop().expect("Failed to unwrap undo_stack");
+        let history = &data.history;
+        let article = &data.article;
+
+        let word = compressor::compress(article, &previous_state);
+
+        match previous_state.action.as_ref().expect("[error] Failed to unwrap action.") {
+            Operation::MarkKnown =>  {
+                database.remove_tokens_known(history, word.tokens)?;
+            },
+            Operation::MarkUnknown => {
+                database.remove_tokens_unknown(history, word.tokens)?;
+            },
+        }
+
+        data.redo_stack.push(current_state.clone());
+        data.current_state = Some(previous_state);
 
         Ok(())
     }
@@ -133,14 +179,14 @@ pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
                         .append(
                             MenuItem::new(
                                 LocalizedString::new("Mark Unknown"),
-                                Command::new(SET_UNKNOWN, (), Target::Auto),
+                                Command::new(MARK_UNKNOWN, (), Target::Auto),
                             )
                             .hotkey(None, "d"),
                         )
                         .append(
                             MenuItem::new(
                                 LocalizedString::new("Mark Known"),
-                                Command::new(SET_KNOWN, (), Target::Auto),
+                                Command::new(MARK_KNOWN, (), Target::Auto),
                             )
                             .hotkey(None, "f"),
                         ),
