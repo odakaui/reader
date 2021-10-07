@@ -54,10 +54,10 @@ impl AppDelegate<ApplicationState> for Delegate {
         } else if cmd.is(REDO) {
             println!("Redo");
 
-            Handled::Yes
-        }
+            self.redo(data).expect("[error] Redo failed.");
 
-        else {
+            Handled::Yes
+        } else {
             Handled::No
         }
     }
@@ -70,7 +70,8 @@ impl Delegate {
         let mut current_state = data
             .current_state
             .as_ref()
-            .expect("Failed to unwrap current_state").clone();
+            .expect("Failed to unwrap current_state")
+            .clone();
 
         let current_position = &current_state.position;
 
@@ -104,7 +105,8 @@ impl Delegate {
             action: None,
         });
 
-        dbg!("{:?}", &data.undo_stack);
+        // clear the redo stack
+        data.redo_stack.clear();
 
         Ok(())
     }
@@ -116,27 +118,64 @@ impl Delegate {
         if data.current_state.is_none() || data.undo_stack.is_empty() {
             println!("[warning] The undo stack is empty.");
 
-            return Ok(())
+            return Ok(());
         }
 
-        let current_state = data.current_state.as_ref().expect("Failed to unwrap current_state");
+        let current_state = data
+            .current_state
+            .as_ref()
+            .expect("Failed to unwrap current_state");
         let previous_state = data.undo_stack.pop().expect("Failed to unwrap undo_stack");
         let history = &data.history;
         let article = &data.article;
 
         let word = compressor::compress(article, &previous_state);
 
-        match previous_state.action.as_ref().expect("[error] Failed to unwrap action.") {
-            Operation::MarkKnown =>  {
+        match previous_state
+            .action
+            .as_ref()
+            .expect("[error] Failed to unwrap action.")
+        {
+            Operation::MarkKnown => {
                 database.remove_tokens_known(history, word.tokens)?;
-            },
+            }
             Operation::MarkUnknown => {
                 database.remove_tokens_unknown(history, word.tokens)?;
-            },
+            }
         }
 
         data.redo_stack.push(current_state.clone());
         data.current_state = Some(previous_state);
+
+        Ok(())
+    }
+
+    fn redo(&self, data: &mut ApplicationState) -> Result<()> {
+        let database = data.database.borrow_mut();
+
+        if data.current_state.is_none()
+            || data.redo_stack.is_empty()
+            || data.current_state.as_ref().unwrap().action.is_none()
+        {
+            println!("[warning] The redo stack is empty.");
+
+            return Ok(());
+        }
+
+        let current_state = data.current_state.as_ref().unwrap().clone();
+        let next_state = data.redo_stack.pop().expect("[error] Failed to unwrap redo_stack.");
+        let history = &data.history;
+        let article = &data.article;
+
+        let word = compressor::compress(article, &current_state);
+
+        match current_state.action.as_ref().unwrap() {
+            Operation::MarkKnown => database.add_tokens_known(history, word.tokens)?,
+            Operation::MarkUnknown => database.add_tokens_unknown(history, word.tokens)?,
+        }
+
+        data.current_state = Some(next_state);
+        data.undo_stack.push(current_state); 
 
         Ok(())
     }

@@ -6,11 +6,11 @@ use std::path::Path;
 pub use history_token::HistoryToken;
 
 mod create;
+mod delete;
 mod history_token;
 mod insert;
 mod select;
 mod update;
-mod delete;
 
 pub struct Database {
     conn: Connection,
@@ -47,7 +47,7 @@ impl Database {
 
     pub fn remove_tokens_unknown(&self, history: &History, tokens: Vec<Token>) -> Result<()> {
         self.delete_tokens_for_history(history, tokens, true)?;
-    
+
         Ok(())
     }
 }
