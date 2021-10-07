@@ -55,16 +55,6 @@
 /// * `token_id` - The id of the token the history references
 /// * `unknown` - The total number of times a token was marked as unknown by the user during a given read through
 /// * `total` - The total number of times the token was scene by the user during a given read through
-///
-///
-///
-/// The `file-tokens` table is a join table between the `files` and `tokens` tables.
-/// It contains the tokens for the current read through.
-///
-/// * `file_id` - The id of the file the token belongs to
-/// * `token_id` - The id of the token the file references
-/// * `unknown` - The total number of times a token was marked as unknown by the user during a given read through
-/// * `total` - The total number of times the token was scene by the user during a given read through
 use anyhow::Result;
 use rusqlite::Connection;
 use std::path::Path;
@@ -85,7 +75,6 @@ impl Database {
 
         db.initialize()?;
 
-        return Ok(db);
+        Ok(db)
     }
-
 }

@@ -8,8 +8,9 @@ use std::path::Path;
 use token::{Token, POS};
 use tokenizer::Tokenizer;
 
-pub use state::{Operation, Position, State};
 pub use application_state::ApplicationState;
+pub use history::History;
+pub use state::{Operation, Position, State};
 
 pub mod app;
 pub mod application_state;
@@ -17,10 +18,11 @@ pub mod article;
 pub mod compressor;
 pub mod database;
 pub mod file;
+pub mod history;
 pub mod reader;
+pub mod state;
 pub mod token;
 pub mod tokenizer;
-pub mod state;
 
 fn read_file(path: &Path) -> Result<String> {
     let f = fs::File::open(path)?;
@@ -79,14 +81,9 @@ fn import(db: &mut Database, import_dir: &Path, file: &Path) -> Result<()> {
 
     // add the file to the database
     let name = file_name(file)?;
-    let f = file::File {
-        id: None,
-        name: name.clone(),
-        eof: false,
-    };
 
-    db.insert_file(&f)?;
-    let f = &db.select_files_for_name(&name)?[0];
+    db.insert_file(&name)?;
+    let f = &db.select_file_for_name(&name)?;
 
     // add the file to the file folder
     let contents = read_file(file)?;
@@ -105,14 +102,14 @@ fn import(db: &mut Database, import_dir: &Path, file: &Path) -> Result<()> {
         tokenized_lines.push(line);
     }
 
-    let article = Article::new(f.id.unwrap() as i32, &name, &tokenized_lines);
-    
+    let article = Article::new(f.id, &name, &tokenized_lines);
+
     fs::write(import_path, ron::to_string(&article)?)?;
 
     Ok(())
 }
 
-fn open(import_dir: &Path, name: &str) -> Result<Article> {
+fn open(db: &mut Database, import_dir: &Path, name: &str) -> Result<ApplicationState> {
     let path = import_dir.join(name);
 
     if !path.exists() {
@@ -121,7 +118,34 @@ fn open(import_dir: &Path, name: &str) -> Result<Article> {
 
     let article = ron::from_str(&String::from_utf8(fs::read(path)?)?)?;
 
-    Ok(article)
+    // get the file id
+    let file = db.select_file_for_name(name)?;
+
+    // get the current history for the file
+    let history = db.select_current_history_for_file(&file)?;
+
+    // create the initial app state
+    let position = Position { index: 0, line: 0 };
+
+    // @TODO load the current state
+    let current_state = State {
+        file_id: file.id,
+        position: Some(position),
+        operation_num: 0,
+        action: Operation::MarkKnown,
+    };
+
+    // setup the application state
+    let app_state = ApplicationState {
+        font: None,
+        current_state: Some(current_state),
+        redo_stack: Vec::new(),
+        undo_stack: Vec::new(),
+        article,
+        history,
+    };
+
+    Ok(app_state)
 }
 
 pub fn main() -> Result<()> {
@@ -135,35 +159,12 @@ pub fn main() -> Result<()> {
     let mut db = Database::new(&db_path)?;
 
     // import the file
-    import(&mut db, &imported_dir, &test_file)?; 
+    import(&mut db, &imported_dir, &test_file)?;
 
     let name = file_name(&test_file)?;
 
     // open the file
-    let article = open(&imported_dir, &name)?;
-
-    // get the file id
-    let file = &db.select_files_for_name(&name)?[0];
-
-    // create the initial app state
-    let position = Position { index: 0, line: 0 };
-
-    let current_state = State {
-        file_id: file.id.expect("Failed to unwrap file id"),
-        position: Some(position),
-        operation_num: 0,
-        total: 0,
-        unknown: 0,
-        action: Operation::MarkKnown,
-    };
-
-    let initial_state = ApplicationState {
-        font: None,
-        current_state: Some(current_state),
-        redo_stack: Vec::new(),
-        undo_stack: Vec::new(),
-        article,
-    };
+    let initial_state = open(&mut db, &imported_dir, &name)?;
 
     launch_app(initial_state)?;
 

@@ -1,5 +1,5 @@
+use crate::{Article, History, State};
 use druid::{Data, FontFamily, Lens};
-use crate::{Article, State};
 
 #[derive(Clone, Data, Lens)]
 pub struct ApplicationState {
@@ -14,5 +14,7 @@ pub struct ApplicationState {
 
     #[data(ignore)]
     pub article: Article,
-}
 
+    #[data(ignore)]
+    pub history: History,
+}

@@ -1,17 +1,17 @@
-use crate::{compressor, Article, ApplicationState, Position, State};
+use crate::{compressor, ApplicationState, Article, Position, State};
 
 // calculate the String to display in the left Label of the reader view
 pub fn start(app_state: &ApplicationState) -> String {
     // return an empty string if current_state is none
     if app_state.current_state.is_none() {
-        return "".to_string()
+        return "".to_string();
     }
 
     let current_state = app_state.current_state.as_ref().unwrap();
 
     // return an empty string if position is none (meaning eof)
     if current_state.position.is_none() {
-        return "".to_string()
+        return "".to_string();
     }
 
     let position = current_state.position.as_ref().unwrap();
@@ -33,14 +33,14 @@ pub fn start(app_state: &ApplicationState) -> String {
 pub fn middle(app_state: &ApplicationState) -> String {
     // return an empty string if current_state is none
     if app_state.current_state.is_none() {
-        return "".to_string()
+        return "".to_string();
     }
 
     let current_state = app_state.current_state.as_ref().unwrap();
 
     // return an empty string if position is none (meaning eof)
     if current_state.position.is_none() {
-        return "EOF".to_string()
+        return "EOF".to_string();
     }
 
     let word = compressor::compress(&app_state.article, current_state);
@@ -52,14 +52,14 @@ pub fn middle(app_state: &ApplicationState) -> String {
 pub fn end(app_state: &ApplicationState) -> String {
     // return an empty string if current_state is none
     if app_state.current_state.is_none() {
-        return "".to_string()
+        return "".to_string();
     }
 
     let current_state = app_state.current_state.as_ref().unwrap();
 
     // return an empty string if position is none (meaning eof)
     if current_state.position.is_none() {
-        return "".to_string()
+        return "".to_string();
     }
 
     let position = current_state.position.as_ref().unwrap();

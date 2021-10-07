@@ -1,4 +1,4 @@
-use crate::{ApplicationState, Article, Operation, State, compressor, reader};
+use crate::{compressor, reader, ApplicationState, Article, Operation, State};
 use anyhow::{anyhow, Result};
 use druid::widget::{
     Align, ClipBox, Controller, CrossAxisAlignment, Flex, Label, LineBreaking, MainAxisAlignment,
@@ -48,19 +48,21 @@ impl AppDelegate<ApplicationState> for Delegate {
 impl Delegate {
     fn mark_known(data: &mut ApplicationState) -> Result<()> {
         let article = &data.article;
-        let current_state = data.current_state.as_ref().expect("Failed to unwrap current_state");
+        let current_state = data
+            .current_state
+            .as_ref()
+            .expect("Failed to unwrap current_state");
 
         let current_position = &current_state.position;
 
         if let None = current_position {
             println!("EOF reached. Implementation TODO.");
-            return Ok(())
+            return Ok(());
         }
 
         let next_position = reader::next_position(&article, &current_state);
 
         let file_id = article.id;
-        let total = current_state.total + compressor::compress(&article, &current_state).tokens.len() as i32;
         let next_operation_num = current_state.operation_num + 1;
         let action = Operation::MarkKnown;
 
@@ -70,8 +72,6 @@ impl Delegate {
             file_id,
             position: next_position,
             operation_num: next_operation_num,
-            total,
-            unknown: current_state.unknown,
             action,
         });
 
@@ -143,9 +143,8 @@ fn build_root_widget() -> impl Widget<ApplicationState> {
             .with_text_color(BACKGROUND_TEXT_COLOR),
     );
 
-    let center_label =
-        Label::new(|data: &ApplicationState, _env: &Env| reader::middle(data))
-            .with_font(primary_font);
+    let center_label = Label::new(|data: &ApplicationState, _env: &Env| reader::middle(data))
+        .with_font(primary_font);
 
     let right_label = Label::new(|data: &ApplicationState, _env: &Env| reader::end(data))
         .with_font(secondary_font)

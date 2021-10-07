@@ -8,8 +8,9 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1"
+chrono = "^0.4"
 druid = "0.7"
 lindera = "0.8.0"
 ron = "*"
-rusqlite = "0.25"
+rusqlite = { version = "0.25", features = ["chrono"] }
 serde = "1"
