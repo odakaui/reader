@@ -5,9 +5,9 @@ use database::Database;
 use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
-use token::{Token, POS};
 use tokenizer::Tokenizer;
 
+pub use token::{Token, TokenInfo, POS};
 pub use application_state::{ApplicationState, ReaderState, StatisticsState, View};
 pub use history::History;
 pub use state::{Operation, Position, State};
@@ -23,6 +23,7 @@ pub mod reader;
 pub mod state;
 pub mod token;
 pub mod tokenizer;
+pub mod statistics;
 
 pub fn main() -> Result<()> {
     let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("resources");

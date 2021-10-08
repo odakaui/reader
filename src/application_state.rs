@@ -1,4 +1,5 @@
-use crate::{Article, Database, History, State, Token};
+use crate::{Article, Database, History, State, TokenInfo, Token};
+use chrono::{DateTime, Utc};
 use druid::{Data, Lens};
 use std::{cell::RefCell, path::PathBuf, rc::Rc};
 
@@ -49,12 +50,16 @@ pub struct ReaderState {
 #[derive(Clone, Data, Debug, Lens)]
 pub struct StatisticsState {
     pub file_name: String,
-    pub start_date: String,
-    pub end_date: Option<String>,
+
+    #[data(ignore)]
+    pub start_date: DateTime<Utc>,
+
+    #[data(ignore)]
+    pub end_date: Option<DateTime<Utc>>,
 
     pub total_seen: i32,
     pub total_unknown: i32,
 
     #[data(ignore)]
-    pub unknown_tokens: Vec<Token>,
+    pub unknown_tokens: Vec<TokenInfo>,
 }

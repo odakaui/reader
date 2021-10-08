@@ -32,7 +32,7 @@ impl Database {
             CREATE TABLE IF NOT EXISTS tokens (
                 id INTEGER PRIMARY KEY,
                 lemma TEXT NOT NULL,
-                pos TEXT NOT NULL,
+                pos INTEGER NOT NULL,
                 CONSTRAINT uq_token UNIQUE(lemma, pos)
                 );
             "#,

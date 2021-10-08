@@ -89,18 +89,21 @@ pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
                         ),
                 )
                 .append(
-                    MenuDesc::new(LocalizedString::new("View")).append(
-                        MenuItem::new(
-                            LocalizedString::new("Reader"),
-                            Command::new(READER, (), Target::Auto),
+                    MenuDesc::new(LocalizedString::new("View"))
+                        .append(
+                            MenuItem::new(
+                                LocalizedString::new("Reader"),
+                                Command::new(READER, (), Target::Auto),
+                            )
+                            .hotkey(None, "r"),
                         )
-                        .hotkey(None, "r")).append(
-                        MenuItem::new(
-                            LocalizedString::new("Reader"),
-                            Command::new(STATISTICS, (), Target::Auto),
-                        )
-                        .hotkey(None, "s"),
-                    ),
+                        .append(
+                            MenuItem::new(
+                                LocalizedString::new("Reader"),
+                                Command::new(STATISTICS, (), Target::Auto),
+                            )
+                            .hotkey(None, "s"),
+                        ),
                 ),
         )
         .window_size((1000.0, 800.0));

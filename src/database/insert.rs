@@ -53,7 +53,6 @@ impl Database {
                     history_token.total_seen += 1;
 
                     if is_unknown {
-                        println!("UNKNOWN");
                         history_token.total_unknown += 1;
                     }
 

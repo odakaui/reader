@@ -1,11 +1,13 @@
-use crate::{ApplicationState, StatisticsState, Token};
-use druid::widget::{Flex, Label, Scroll, Either};
+use crate::{ApplicationState, StatisticsState, TokenInfo};
+use druid::widget::{Either, Flex, Label, Scroll};
 use druid::{Env, FontDescriptor, FontFamily, Widget, WidgetExt};
 
 pub fn build_statistics_view() -> impl Widget<ApplicationState> {
-    let either = Either::new(|data: &ApplicationState, _: &Env| -> bool {
-        data.statistics_state.is_none()
-    }, build_none_view(), build_data_view());
+    let either = Either::new(
+        |data: &ApplicationState, _: &Env| -> bool { data.statistics_state.is_none() },
+        build_none_view(),
+        build_data_view(),
+    );
 
     WidgetExt::center(either)
 }
@@ -31,7 +33,8 @@ pub fn build_data_view() -> impl Widget<ApplicationState> {
         }
 
         format!("Statistics for {}", data.as_ref().unwrap().file_name)
-    });
+    })
+    .with_font(primary_font);
 
     let start_label = Label::new(|data: &Option<StatisticsState>, _: &Env| {
         if data.is_none() {
@@ -39,7 +42,8 @@ pub fn build_data_view() -> impl Widget<ApplicationState> {
         }
 
         format!("Start date: {}", data.as_ref().unwrap().start_date)
-    });
+    })
+    .with_font(data_font.clone());
 
     let end_label = Label::new(|data: &Option<StatisticsState>, _: &Env| {
         if data.is_none() {
@@ -47,7 +51,8 @@ pub fn build_data_view() -> impl Widget<ApplicationState> {
         }
 
         format!("End date: {}", data.as_ref().unwrap().start_date)
-    });
+    })
+    .with_font(data_font.clone());
 
     let total_label = Label::new(|data: &Option<StatisticsState>, _: &Env| {
         if data.is_none() {
@@ -55,7 +60,8 @@ pub fn build_data_view() -> impl Widget<ApplicationState> {
         }
 
         format!("Total tokens seen: {}", data.as_ref().unwrap().total_seen)
-    });
+    })
+    .with_font(data_font.clone());
 
     let known_label = Label::new(|data: &Option<StatisticsState>, _: &Env| {
         if data.is_none() {
@@ -67,7 +73,8 @@ pub fn build_data_view() -> impl Widget<ApplicationState> {
         let total_known = data.total_seen - data.total_unknown;
         let percentage = total_known as f64 / data.total_seen as f64 * 100.0;
         format!("Percent known: {}", percentage.round())
-    });
+    })
+    .with_font(data_font.clone());
 
     let unknown_label = Label::new(|data: &Option<StatisticsState>, _: &Env| {
         if data.is_none() {
@@ -75,7 +82,8 @@ pub fn build_data_view() -> impl Widget<ApplicationState> {
         }
 
         format_unknown(data.as_ref().unwrap().unknown_tokens.clone())
-    });
+    })
+    .with_font(data_font);
 
     Scroll::new(
         Flex::column()
@@ -84,19 +92,26 @@ pub fn build_data_view() -> impl Widget<ApplicationState> {
             .with_flex_child(end_label, 1.0)
             .with_flex_child(total_label, 1.0)
             .with_flex_child(known_label, 1.0)
-            .with_flex_child(unknown_label, 1.0).lens(ApplicationState::statistics_state),
-    ).vertical()
+            .with_flex_child(unknown_label, 1.0)
+            .lens(ApplicationState::statistics_state),
+    )
+    .vertical()
 }
 
-fn format_unknown(tokens: Vec<Token>) -> String {
+fn format_unknown(token_info_list: Vec<TokenInfo>) -> String {
     let mut text = String::new();
 
-    for (i, token) in tokens.iter().enumerate() {
-        text.push_str(&token.lemma);
+    for (i, token_info) in token_info_list.iter().enumerate() {
+        let token = &token_info.token;
 
         if i != 0 {
-            text.push_str("\n");
+            text.push('\n');
         }
+
+        let total_known = token_info.total_seen - token_info.total_unknown;
+        let percentage = (total_known as f64 / token_info.total_seen as f64) * 100.0;
+
+        text.push_str(&format!("{}   {:?} {}% {}", token.lemma, token.pos, percentage.round(), token_info.total_seen));
     }
 
     text

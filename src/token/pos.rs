@@ -46,7 +46,7 @@ impl POS {
         }
     }
 
-    pub fn to_pos(&self, num: u8) -> POS {
+    pub fn to_pos(num: u8) -> POS {
         match num {
             0 => POS::EMPTY,
             1 => POS::PRON,
