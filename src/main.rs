@@ -26,21 +26,6 @@ pub mod state;
 pub mod token;
 pub mod tokenizer;
 
-fn read_file(path: &Path) -> Result<String> {
-    let f = fs::File::open(path)?;
-    let mut buf = BufReader::new(f);
-    let mut contents = String::new();
-    buf.read_to_string(&mut contents)?;
-
-    Ok(contents)
-}
-
-fn write_file(path: &Path, text: &str) -> Result<()> {
-    fs::write(path, text)?;
-
-    Ok(())
-}
-
 pub fn main() -> Result<()> {
     let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("resources");
 

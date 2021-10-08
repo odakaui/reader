@@ -1,8 +1,8 @@
 use super::{MARK_KNOWN, MARK_UNKNOWN, REDO, UNDO};
-use crate::{compressor, reader, ApplicationState, Operation, ReaderState, State};
+use crate::{Tokenizer,Article,Position,  Line, compressor, reader, ApplicationState, Operation, ReaderState, State};
 use anyhow::{anyhow, Result};
-use druid::{AppDelegate, Command, DelegateCtx, Env, Handled, Target};
-use std::{fs, path::Path};
+use druid::{AppDelegate, Command, DelegateCtx, Env, Handled, Target, commands};
+use std::{fs, path::Path, io::BufReader, io::Read};
 
 pub struct Delegate;
 
@@ -21,29 +21,33 @@ impl AppDelegate<ApplicationState> for Delegate {
             self.add_tokens(data, Operation::MarkUnknown)
                 .expect("Mark Unknown failed.");
 
-            Handled::Yes
+            return Handled::Yes
         } else if cmd.is(MARK_KNOWN) {
             println!("Mark Known");
 
             self.add_tokens(data, Operation::MarkKnown)
                 .expect("Mark Known failed.");
 
-            Handled::Yes
+            return Handled::Yes
         } else if cmd.is(UNDO) {
             println!("Undo");
 
             self.undo(data).expect("[error] Undo failed.");
 
-            Handled::Yes
+            return Handled::Yes
         } else if cmd.is(REDO) {
             println!("Redo");
 
             self.redo(data).expect("[error] Redo failed.");
 
-            Handled::Yes
-        } else {
-            Handled::No
+            return Handled::Yes
         }
+
+        if let Some(file_info) = cmd.get(commands::OPEN_FILE) {
+            self.import(data, file_info.path()).expect("[error] Open File failed.");
+        }
+
+        Handled::No
     }
 }
 
@@ -230,76 +234,83 @@ impl Delegate {
             .to_string())
     }
 
-    fn import(&self, data: &mut ApplicationState) -> Result<()> {
+fn read_file(path: &Path) -> Result<String> {
+    let f = fs::File::open(path)?;
+    let mut buf = BufReader::new(f);
+    let mut contents = String::new();
+    buf.read_to_string(&mut contents)?;
+
+    Ok(contents)
+}
+
+fn write_file(path: &Path, text: &str) -> Result<()> {
+    fs::write(path, text)?;
+
+    Ok(())
+}
+
+
+    fn import(&self, data: &mut ApplicationState, path: &Path) -> Result<()> {
         // create files_dir
         let files_dir = &data.files_dir;
         Self::create_dir(&files_dir)?;
 
+        // add the file to the database
+        let database = data.database.borrow_mut();
+        let name = Self::file_name(path)?;
+
+        database.insert_file(&name)?;
+
+        let file = database.select_file_for_name(&name)?;
+
+        // add the file to files_dir
+        let contents = Self::read_file(path)?;
+        let clean_lines = Self::clean(&contents);
+        let import_path = files_dir.join(&name);
+
+        let mut tokenizer = Tokenizer::new()?;
+
+        let mut tokenized_lines: Vec<Line> = Vec::new();
+        for x in clean_lines.iter() {
+            let tokens = tokenizer.tokenize(x)?;
+            let line = Line {
+                sentence: x.into(),
+                tokens,
+            };
+
+            tokenized_lines.push(line);
+        }
+
+        let article = Article::new(file.id, &name, &tokenized_lines);
+
+        fs::write(import_path, ron::to_string(&article)?)?;
+
+
+        // get the current history for file
+        let history = database.select_current_history_for_file(&file)?;
+
+        // create the initial app state
+        let position = Position { index: 0, line: 0 };
+
+        // @TODO load the current state
+        let current_state = State {
+            file_id: file.id,
+            position: Some(position),
+            operation_num: 0,
+            action: None,
+        };
+
+        // create the ReaderState
+        let reader_state = ReaderState {
+            current_state,
+            redo_stack: Vec::new(),
+            undo_stack: Vec::new(),
+            article,
+            history,
+        };
+
+        data.reader_state = Some(reader_state);
+
         Ok(())
-
-        // // add the file to the database
-        // let name = Self::file_name(file)?;
-
-        // db.insert_file(&name)?;
-        // let f = &db.select_file_for_name(&name)?;
-
-        // // add the file to the file folder
-        // let contents = read_file(file)?;
-        // let clean_lines = clean(&contents);
-        // let import_path = import_dir.join(&name);
-        // let mut tokenizer = tokenizer::new()?;
-
-        // let mut tokenized_lines: vec<line> = vec::new();
-        // for x in clean_lines.iter() {
-        //     let tokens = tokenizer.tokenize(x)?;
-        //     let line = line {
-        //         sentence: x.into(),
-        //         tokens,
-        //     };
-
-        //     tokenized_lines.push(line);
-        // }
-
-        // let article = article::new(f.id, &name, &tokenized_lines);
-
-        // fs::write(import_path, ron::to_string(&article)?)?;
-
-        // let files_dir = data.files_dir;
-
-        // if !path.exists() {
-        //     return Err(anyhow!("The file {} does not exist.", name));
-        // }
-
-        // let article = ron::from_str(&String::from_utf8(fs::read(path)?)?)?;
-
-        // let db = database.borrow_mut();
-
-        // // get the file id
-        // let file = db.select_file_for_name(name)?;
-
-        // // get the current history for the file
-        // let history = db.select_current_history_for_file(&file)?;
-
-        // // create the initial app state
-        // let position = Position { index: 0, line: 0 };
-
-        // // @TODO load the current state
-        // let current_state = State {
-        //     file_id: file.id,
-        //     position: Some(position),
-        //     operation_num: 0,
-        //     action: None,
-        // };
-
-        // // create the ReaderState
-        // let reader_state = ReaderState {
-        //     current_state,
-        //     redo_stack: Vec::new(),
-        //     undo_stack: Vec::new(),
-        //     article,
-        //     history,
-        // };
-
-        // Ok(reader_state)
     }
 }

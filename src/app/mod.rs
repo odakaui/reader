@@ -7,7 +7,7 @@ use druid::widget::{
 use druid::{
     AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, FontDescriptor, FontFamily,
     Handled, Key, Lens, LocalizedString, MenuDesc, MenuItem, Point, RawMods, Selector, Target,
-    TextAlignment, UpdateCtx, Widget, WidgetExt, WindowDesc,
+    TextAlignment, UpdateCtx, Widget, WidgetExt, WindowDesc, FileSpec, FileDialogOptions,
 };
 use right_aligned_label::RightAlignedLabel;
 
@@ -17,12 +17,22 @@ mod right_aligned_label;
 const HORIZONTAL_WIDGET_SPACING: f64 = 64.0;
 const BACKGROUND_TEXT_COLOR: Key<Color> = Key::new("background-text-color");
 const WINDOW_TITLE: LocalizedString<ApplicationState> = LocalizedString::new("Reader");
+
 const MARK_UNKNOWN: Selector<()> = Selector::new("MARK_UNKNOWN");
 const MARK_KNOWN: Selector<()> = Selector::new("MARK_KNOWN");
-const UNDO: Selector<()> = Selector::new("undo");
-const REDO: Selector<()> = Selector::new("redo");
+const UNDO: Selector<()> = Selector::new("UNDO");
+const REDO: Selector<()> = Selector::new("REDO");
 
 pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
+    // create the open file dialogue
+    let txt = FileSpec::new("Text file", &["txt"]);
+    let open_dialog_options = FileDialogOptions::new()
+        .allowed_types(vec![txt])
+        .default_type(txt)
+        .name_label("Source")
+        .title("Import file")
+        .button_text("Import");
+
     // describe the main window
     let main_window = WindowDesc::new(build_root_widget)
         .title(WINDOW_TITLE)
@@ -31,8 +41,8 @@ pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
                 .append(
                     MenuDesc::new(LocalizedString::new("File")).append(
                         MenuItem::new(
-                            LocalizedString::new("open"),
-                            Command::new(Selector::new("open"), 1, Target::Auto),
+                            LocalizedString::new("Open"),
+                            druid::commands::SHOW_OPEN_PANEL.with(open_dialog_options)
                         )
                         .hotkey(RawMods::Ctrl, "o"),
                     ),
