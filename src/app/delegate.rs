@@ -1,7 +1,8 @@
-use crate::{ApplicationState, Operation, State, reader, compressor};
-use druid::{AppDelegate, Target, DelegateCtx, Command, Handled, Env};
-use super::{MARK_KNOWN, MARK_UNKNOWN, UNDO, REDO};
-use anyhow::Result;
+use super::{MARK_KNOWN, MARK_UNKNOWN, REDO, UNDO};
+use crate::{compressor, reader, ApplicationState, Operation, ReaderState, State};
+use anyhow::{anyhow, Result};
+use druid::{AppDelegate, Command, DelegateCtx, Env, Handled, Target};
+use std::{fs, path::Path};
 
 pub struct Delegate;
 
@@ -48,21 +49,17 @@ impl AppDelegate<ApplicationState> for Delegate {
 
 impl Delegate {
     fn add_tokens(&self, data: &mut ApplicationState, action: Operation) -> Result<()> {
-        let article = &data.article;
-        let history = &data.history;
-
-        // return if current_state is None
-        if data.current_state.is_none() {
-            println!("[error] current_state is None.");
-
-            return Ok(())
+        // return if reader_state is None
+        if data.reader_state.is_none() {
+            println!("[error] File not loaded.");
         }
 
-        let mut current_state = data
-            .current_state
-            .as_ref()
-            .expect("Failed to unwrap current_state")
-            .clone();
+        let reader_state = data.reader_state.as_mut().unwrap();
+
+        let article = &reader_state.article;
+        let history = &reader_state.history;
+
+        let mut current_state = reader_state.current_state.clone();
 
         // return if current_position is None
         if current_state.position.is_none() {
@@ -71,7 +68,7 @@ impl Delegate {
             return Ok(());
         }
 
-        // add the tokens to the database
+        // add the tokens to the reader_statebase
         let database = &data.database.borrow_mut();
         let word = compressor::compress(article, &current_state);
 
@@ -80,40 +77,52 @@ impl Delegate {
             Operation::MarkUnknown => database.add_tokens_unknown(history, word.tokens)?,
         }
 
-        // set the action of the current_state and move it to the undo_stack 
+        // set the action of the current_state and move it to the undo_stack
         current_state.action = Some(action);
-        data.undo_stack.push(current_state.clone());
+        reader_state.undo_stack.push(current_state.clone());
 
         // set the current_state
         let next_position = reader::next_position(article, &current_state);
         let file_id = article.id;
         let next_operation_num = current_state.operation_num + 1;
 
-        data.current_state = Some(State {
+        reader_state.current_state = State {
             file_id,
             position: next_position,
             operation_num: next_operation_num,
             action: None,
-        });
+        };
 
         // clear the redo stack
-        data.redo_stack.clear();
+        reader_state.redo_stack.clear();
 
         Ok(())
     }
 
     fn undo(&self, data: &mut ApplicationState) -> Result<()> {
-        // return if the current_state is None or the undo stack is empty
-        if data.current_state.is_none() || data.undo_stack.is_empty() {
+        // return if reader_state is None
+        if data.reader_state.is_none() {
+            println!("[error] File not loaded.");
+
+            return Ok(());
+        }
+
+        let reader_state = data.reader_state.as_mut().unwrap();
+
+        // return if the undo_stack is empty
+        if reader_state.undo_stack.is_empty() {
             println!("[warning] The undo stack is empty.");
 
             return Ok(());
         }
 
         // remove the tokens from the database
-        let previous_state = data.undo_stack.pop().expect("Failed to unwrap undo_stack");
-        let history = &data.history;
-        let article = &data.article;
+        let previous_state = reader_state
+            .undo_stack
+            .pop()
+            .expect("Failed to unwrap undo_stack");
+        let history = &reader_state.history;
+        let article = &reader_state.article;
 
         let database = data.database.borrow_mut();
         let word = compressor::compress(article, &previous_state);
@@ -132,35 +141,37 @@ impl Delegate {
         }
 
         // add the current state to the redo_stack
-        let current_state = data
-            .current_state
-            .as_ref()
-            .expect("Failed to unwrap current_state").clone();
+        let current_state = reader_state.current_state.clone();
 
-        data.redo_stack.push(current_state);
+        reader_state.redo_stack.push(current_state);
 
         // set the current_state to the previous_state
-        data.current_state = Some(previous_state);
+        reader_state.current_state = previous_state;
 
         Ok(())
     }
 
     fn redo(&self, data: &mut ApplicationState) -> Result<()> {
-        // return if the current_state is None or the redo_stack is empty or current_state.action
-        // is None
-        if data.current_state.is_none()
-            || data.redo_stack.is_empty()
-            || data.current_state.as_ref().unwrap().action.is_none()
-        {
+        // return if reader_state is None
+        if data.reader_state.is_none() {
+            println!("[error] File not loaded.");
+
+            return Ok(());
+        }
+
+        let reader_state = data.reader_state.as_mut().unwrap();
+
+        // return if the redo_state is empty
+        if reader_state.redo_stack.is_empty() {
             println!("[warning] The redo stack is empty.");
 
             return Ok(());
         }
 
         // add the tokens to the database
-        let current_state = data.current_state.as_ref().unwrap().clone();
-        let history = &data.history;
-        let article = &data.article;
+        let current_state = reader_state.current_state.clone();
+        let history = &reader_state.history;
+        let article = &reader_state.article;
 
         let database = data.database.borrow_mut();
         let word = compressor::compress(article, &current_state);
@@ -171,13 +182,124 @@ impl Delegate {
         }
 
         // set the current_state to the next_state
-        let next_state = data.redo_stack.pop().expect("[error] Failed to unwrap redo_stack.");
+        let next_state = reader_state
+            .redo_stack
+            .pop()
+            .expect("[error] Failed to unwrap redo_stack.");
 
-        data.current_state = Some(next_state);
+        reader_state.current_state = next_state;
 
         // add the current_state ot the undo_stack
-        data.undo_stack.push(current_state); 
+        reader_state.undo_stack.push(current_state);
 
         Ok(())
+    }
+
+    fn create_dir(path: &Path) -> Result<()> {
+        if !path.exists() {
+            fs::create_dir_all(path)?;
+        }
+
+        Ok(())
+    }
+
+    fn clean(text: &str) -> Vec<String> {
+        let lines = text.lines();
+
+        lines
+            .map(|x| x.chars().filter(|c| !c.is_whitespace()).collect())
+            .filter(|x: &String| !x.is_empty())
+            .collect()
+    }
+
+    fn file_stem(path: &Path) -> Result<String> {
+        Ok(path
+            .file_stem()
+            .ok_or(anyhow!("Failed to parse file name."))?
+            .to_str()
+            .ok_or(anyhow!("Failed to convert file name."))?
+            .to_string())
+    }
+
+    fn file_name(path: &Path) -> Result<String> {
+        Ok(path
+            .file_name()
+            .ok_or(anyhow!("Failed to parse file name."))?
+            .to_str()
+            .ok_or(anyhow!("Failed to convert file name."))?
+            .to_string())
+    }
+
+    fn import(&self, data: &mut ApplicationState) -> Result<()> {
+        // create files_dir
+        let files_dir = &data.files_dir;
+        Self::create_dir(&files_dir)?;
+
+        Ok(())
+
+        // // add the file to the database
+        // let name = Self::file_name(file)?;
+
+        // db.insert_file(&name)?;
+        // let f = &db.select_file_for_name(&name)?;
+
+        // // add the file to the file folder
+        // let contents = read_file(file)?;
+        // let clean_lines = clean(&contents);
+        // let import_path = import_dir.join(&name);
+        // let mut tokenizer = tokenizer::new()?;
+
+        // let mut tokenized_lines: vec<line> = vec::new();
+        // for x in clean_lines.iter() {
+        //     let tokens = tokenizer.tokenize(x)?;
+        //     let line = line {
+        //         sentence: x.into(),
+        //         tokens,
+        //     };
+
+        //     tokenized_lines.push(line);
+        // }
+
+        // let article = article::new(f.id, &name, &tokenized_lines);
+
+        // fs::write(import_path, ron::to_string(&article)?)?;
+
+        // let files_dir = data.files_dir;
+
+        // if !path.exists() {
+        //     return Err(anyhow!("The file {} does not exist.", name));
+        // }
+
+        // let article = ron::from_str(&String::from_utf8(fs::read(path)?)?)?;
+
+        // let db = database.borrow_mut();
+
+        // // get the file id
+        // let file = db.select_file_for_name(name)?;
+
+        // // get the current history for the file
+        // let history = db.select_current_history_for_file(&file)?;
+
+        // // create the initial app state
+        // let position = Position { index: 0, line: 0 };
+
+        // // @TODO load the current state
+        // let current_state = State {
+        //     file_id: file.id,
+        //     position: Some(position),
+        //     operation_num: 0,
+        //     action: None,
+        // };
+
+        // // create the ReaderState
+        // let reader_state = ReaderState {
+        //     current_state,
+        //     redo_stack: Vec::new(),
+        //     undo_stack: Vec::new(),
+        //     article,
+        //     history,
+        // };
+
+        // Ok(reader_state)
     }
 }

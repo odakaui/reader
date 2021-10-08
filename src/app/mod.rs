@@ -1,5 +1,6 @@
-use crate::{compressor, reader, ApplicationState, Article, Operation, State};
+use crate::{compressor, reader, ApplicationState, Article, Operation, ReaderState, State};
 use anyhow::{anyhow, Result};
+use delegate::Delegate;
 use druid::widget::{
     Align, ClipBox, Controller, CrossAxisAlignment, Flex, Label, LineBreaking, MainAxisAlignment,
 };
@@ -9,10 +10,9 @@ use druid::{
     TextAlignment, UpdateCtx, Widget, WidgetExt, WindowDesc,
 };
 use right_aligned_label::RightAlignedLabel;
-use delegate::Delegate;
 
-mod right_aligned_label;
 mod delegate;
+mod right_aligned_label;
 
 const HORIZONTAL_WIDGET_SPACING: f64 = 64.0;
 const BACKGROUND_TEXT_COLOR: Key<Color> = Key::new("background-text-color");
@@ -21,7 +21,6 @@ const MARK_UNKNOWN: Selector<()> = Selector::new("MARK_UNKNOWN");
 const MARK_KNOWN: Selector<()> = Selector::new("MARK_KNOWN");
 const UNDO: Selector<()> = Selector::new("undo");
 const REDO: Selector<()> = Selector::new("redo");
-
 
 pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
     // describe the main window
@@ -97,17 +96,20 @@ fn build_root_widget() -> impl Widget<ApplicationState> {
 
     // create the labels
     let left_label = RightAlignedLabel::new(
-        Label::new(|data: &ApplicationState, _env: &Env| reader::start(data))
+        Label::new(|data: &Option<ReaderState>, _env: &Env| reader::start(data))
             .with_font(secondary_font.clone())
             .with_text_color(BACKGROUND_TEXT_COLOR),
-    );
+    )
+    .lens(ApplicationState::reader_state);
 
-    let center_label = Label::new(|data: &ApplicationState, _env: &Env| reader::middle(data))
-        .with_font(primary_font);
+    let center_label = Label::new(|data: &Option<ReaderState>, _env: &Env| reader::middle(data))
+        .with_font(primary_font)
+    .lens(ApplicationState::reader_state);
 
-    let right_label = Label::new(|data: &ApplicationState, _env: &Env| reader::end(data))
+    let right_label = Label::new(|data: &Option<ReaderState>, _env: &Env| reader::end(data))
         .with_font(secondary_font)
-        .with_text_color(BACKGROUND_TEXT_COLOR);
+        .with_text_color(BACKGROUND_TEXT_COLOR)
+    .lens(ApplicationState::reader_state);
 
     let layout = Flex::row()
         .must_fill_main_axis(true)

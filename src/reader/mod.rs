@@ -1,13 +1,14 @@
-use crate::{compressor, ApplicationState, Article, Position, State};
+use crate::{compressor, Article, Position, ReaderState, State};
 
 // calculate the String to display in the left Label of the reader view
-pub fn start(app_state: &ApplicationState) -> String {
+pub fn start(reader_state: &Option<ReaderState>) -> String {
     // return an empty string if current_state is none
-    if app_state.current_state.is_none() {
+    if reader_state.is_none() {
         return "".to_string();
     }
 
-    let current_state = app_state.current_state.as_ref().unwrap();
+    let reader_state = reader_state.as_ref().unwrap();
+    let current_state = &reader_state.current_state;
 
     // return an empty string if position is none (meaning eof)
     if current_state.position.is_none() {
@@ -19,7 +20,7 @@ pub fn start(app_state: &ApplicationState) -> String {
     if position.index == 0 {
         "".to_string()
     } else {
-        let words = compressor::compress_line(&app_state.article, current_state);
+        let words = compressor::compress_line(&reader_state.article, &current_state);
 
         words[..position.index]
             .iter()
@@ -30,32 +31,34 @@ pub fn start(app_state: &ApplicationState) -> String {
 }
 
 // calculate the String to display in the center Label of the reader view
-pub fn middle(app_state: &ApplicationState) -> String {
+pub fn middle(reader_state: &Option<ReaderState>) -> String {
     // return an empty string if current_state is none
-    if app_state.current_state.is_none() {
+    if reader_state.is_none() {
         return "".to_string();
     }
 
-    let current_state = app_state.current_state.as_ref().unwrap();
+    let reader_state = reader_state.as_ref().unwrap();
+    let current_state = &reader_state.current_state;
 
     // return an empty string if position is none (meaning eof)
     if current_state.position.is_none() {
         return "EOF".to_string();
     }
 
-    let word = compressor::compress(&app_state.article, current_state);
+    let word = compressor::compress(&reader_state.article, &current_state);
 
     word.text
 }
 
 // calculate the String to display in the right Label of the reader view
-pub fn end(app_state: &ApplicationState) -> String {
+pub fn end(reader_state: &Option<ReaderState>) -> String {
     // return an empty string if current_state is none
-    if app_state.current_state.is_none() {
+    if reader_state.is_none() {
         return "".to_string();
     }
 
-    let current_state = app_state.current_state.as_ref().unwrap();
+    let reader_state = reader_state.as_ref().unwrap();
+    let current_state = &reader_state.current_state;
 
     // return an empty string if position is none (meaning eof)
     if current_state.position.is_none() {
@@ -64,7 +67,7 @@ pub fn end(app_state: &ApplicationState) -> String {
 
     let position = current_state.position.as_ref().unwrap();
 
-    let words = compressor::compress_line(&app_state.article, current_state);
+    let words = compressor::compress_line(&reader_state.article, &current_state);
 
     if position.index >= words.len() {
         "".to_string()
