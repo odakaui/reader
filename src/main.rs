@@ -10,7 +10,7 @@ use std::rc::Rc;
 use token::{Token, POS};
 use tokenizer::Tokenizer;
 
-pub use application_state::{ApplicationState, ReaderState};
+pub use application_state::{ApplicationState, ReaderState, View};
 pub use history::History;
 pub use state::{Operation, Position, State};
 
@@ -37,12 +37,12 @@ pub fn main() -> Result<()> {
     let database = Rc::new(RefCell::new(Database::new(&database_path)?));
 
     let initial_state = ApplicationState {
-        font: None,
         reader_state: None,
         database,
         config_dir,
         share_dir,
         files_dir,
+        current_view: View::Reader,
     };
 
     launch_app(initial_state)?;

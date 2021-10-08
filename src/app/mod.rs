@@ -1,17 +1,20 @@
-use crate::{compressor, reader, ApplicationState, Article, Operation, ReaderState, State};
+use crate::{compressor, reader, ApplicationState, View, Article, Operation, ReaderState, State};
 use anyhow::{anyhow, Result};
 use delegate::Delegate;
 use druid::widget::{
-    Align, ClipBox, Controller, CrossAxisAlignment, Flex, Label, LineBreaking, MainAxisAlignment,
+    Align, ClipBox, Controller, CrossAxisAlignment, Flex, Label, LineBreaking, MainAxisAlignment, ViewSwitcher,
 };
 use druid::{
-    AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, FontDescriptor, FontFamily,
-    Handled, Key, Lens, LocalizedString, MenuDesc, MenuItem, Point, RawMods, Selector, Target,
-    TextAlignment, UpdateCtx, Widget, WidgetExt, WindowDesc, FileSpec, FileDialogOptions,
+    AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, FileDialogOptions, FileSpec,
+    FontDescriptor, FontFamily, Handled, Key, Lens, LocalizedString, MenuDesc, MenuItem, Point,
+    RawMods, Selector, Target, TextAlignment, UpdateCtx, Widget, WidgetExt, WindowDesc,
 };
 use right_aligned_label::RightAlignedLabel;
+use std::boxed::Box;
 
 mod delegate;
+mod reader_view;
+mod test_view;
 mod right_aligned_label;
 
 const HORIZONTAL_WIDGET_SPACING: f64 = 64.0;
@@ -22,6 +25,7 @@ const MARK_UNKNOWN: Selector<()> = Selector::new("MARK_UNKNOWN");
 const MARK_KNOWN: Selector<()> = Selector::new("MARK_KNOWN");
 const UNDO: Selector<()> = Selector::new("UNDO");
 const REDO: Selector<()> = Selector::new("REDO");
+const TOGGLE: Selector<()> = Selector::new("TOGGLE");
 
 pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
     // create the open file dialogue
@@ -42,7 +46,7 @@ pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
                     MenuDesc::new(LocalizedString::new("File")).append(
                         MenuItem::new(
                             LocalizedString::new("Open"),
-                            druid::commands::SHOW_OPEN_PANEL.with(open_dialog_options)
+                            druid::commands::SHOW_OPEN_PANEL.with(open_dialog_options),
                         )
                         .hotkey(RawMods::Ctrl, "o"),
                     ),
@@ -80,6 +84,16 @@ pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
                             )
                             .hotkey(None, "f"),
                         ),
+                )
+                .append(
+                    MenuDesc::new(LocalizedString::new("View"))
+                        .append(
+                            MenuItem::new(
+                                LocalizedString::new("Toggle"),
+                                Command::new(TOGGLE, (), Target::Auto),
+                            )
+                            .hotkey(None, "t"),
+                        ),
                 ),
         )
         .window_size((1000.0, 800.0));
@@ -99,38 +113,18 @@ pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
 }
 
 fn build_root_widget() -> impl Widget<ApplicationState> {
-    // set up the fonts - requires that Noto Sans CJK JP is installed
-    let noto_cjk = FontFamily::new_unchecked("Noto Sans CJK JP");
-    let primary_font = FontDescriptor::new(noto_cjk.clone()).with_size(64.0);
-    let secondary_font = FontDescriptor::new(noto_cjk).with_size(48.0);
+    let switch_view = ViewSwitcher::new(|data: &ApplicationState, _: &Env| -> View {
+        data.current_view.clone()
+    }, |current_view: &View, _: &ApplicationState, _: &Env| {
+        match current_view {
+            View::Reader => {
+                Box::new(reader_view::build_reader_view())
+            },
+            View::Test => {
+                Box::new(test_view::build_test_view())
+            }
+        }
+    });
 
-    // create the labels
-    let left_label = RightAlignedLabel::new(
-        Label::new(|data: &Option<ReaderState>, _env: &Env| reader::start(data))
-            .with_font(secondary_font.clone())
-            .with_text_color(BACKGROUND_TEXT_COLOR),
-    )
-    .lens(ApplicationState::reader_state);
-
-    let center_label = Label::new(|data: &Option<ReaderState>, _env: &Env| reader::middle(data))
-        .with_font(primary_font)
-    .lens(ApplicationState::reader_state);
-
-    let right_label = Label::new(|data: &Option<ReaderState>, _env: &Env| reader::end(data))
-        .with_font(secondary_font)
-        .with_text_color(BACKGROUND_TEXT_COLOR)
-    .lens(ApplicationState::reader_state);
-
-    let layout = Flex::row()
-        .must_fill_main_axis(true)
-        // .main_axis_alignment(MainAxisAlignment::Center)
-        // .cross_axis_alignment(CrossAxisAlignment::Center)
-        .with_flex_child(WidgetExt::expand_width(left_label), 1.0)
-        .with_spacer(HORIZONTAL_WIDGET_SPACING)
-        .with_flex_child(WidgetExt::expand_width(Align::centered(center_label)), 1.0)
-        .with_spacer(HORIZONTAL_WIDGET_SPACING)
-        .with_flex_child(WidgetExt::expand_width(Align::left(right_label)), 1.0);
-
-    // center the two widgets in the available space
-    Align::centered(layout)
+    WidgetExt::center(switch_view)
 }

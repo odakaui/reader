@@ -1,8 +1,11 @@
-use super::{MARK_KNOWN, MARK_UNKNOWN, REDO, UNDO};
-use crate::{Tokenizer,Article,Position,  Line, compressor, reader, ApplicationState, Operation, ReaderState, State};
+use super::{MARK_KNOWN, MARK_UNKNOWN, REDO, UNDO, TOGGLE};
+use crate::{
+    compressor, reader, ApplicationState, Article, Line, Operation, Position, ReaderState, State,
+    Tokenizer,
+};
 use anyhow::{anyhow, Result};
-use druid::{AppDelegate, Command, DelegateCtx, Env, Handled, Target, commands};
-use std::{fs, path::Path, io::BufReader, io::Read};
+use druid::{commands, AppDelegate, Command, DelegateCtx, Env, Handled, Target};
+use std::{fs, io::BufReader, io::Read, path::Path};
 
 pub struct Delegate;
 
@@ -21,30 +24,37 @@ impl AppDelegate<ApplicationState> for Delegate {
             self.add_tokens(data, Operation::MarkUnknown)
                 .expect("Mark Unknown failed.");
 
-            return Handled::Yes
+            return Handled::Yes;
         } else if cmd.is(MARK_KNOWN) {
             println!("Mark Known");
 
             self.add_tokens(data, Operation::MarkKnown)
                 .expect("Mark Known failed.");
 
-            return Handled::Yes
+            return Handled::Yes;
         } else if cmd.is(UNDO) {
             println!("Undo");
 
             self.undo(data).expect("[error] Undo failed.");
 
-            return Handled::Yes
+            return Handled::Yes;
         } else if cmd.is(REDO) {
             println!("Redo");
 
             self.redo(data).expect("[error] Redo failed.");
 
-            return Handled::Yes
+            return Handled::Yes;
+        } else if cmd.is(TOGGLE) {
+            println!("Toggle");
+
+            self.toggle(data).expect("[error] Toggle failed.");
+
+            return Handled::Yes;
         }
 
         if let Some(file_info) = cmd.get(commands::OPEN_FILE) {
-            self.import(data, file_info.path()).expect("[error] Open File failed.");
+            self.import(data, file_info.path())
+                .expect("[error] Open File failed.");
         }
 
         Handled::No
@@ -234,21 +244,20 @@ impl Delegate {
             .to_string())
     }
 
-fn read_file(path: &Path) -> Result<String> {
-    let f = fs::File::open(path)?;
-    let mut buf = BufReader::new(f);
-    let mut contents = String::new();
-    buf.read_to_string(&mut contents)?;
+    fn read_file(path: &Path) -> Result<String> {
+        let f = fs::File::open(path)?;
+        let mut buf = BufReader::new(f);
+        let mut contents = String::new();
+        buf.read_to_string(&mut contents)?;
 
-    Ok(contents)
-}
+        Ok(contents)
+    }
 
-fn write_file(path: &Path, text: &str) -> Result<()> {
-    fs::write(path, text)?;
+    fn write_file(path: &Path, text: &str) -> Result<()> {
+        fs::write(path, text)?;
 
-    Ok(())
-}
-
+        Ok(())
+    }
 
     fn import(&self, data: &mut ApplicationState, path: &Path) -> Result<()> {
         // create files_dir
@@ -285,7 +294,6 @@ fn write_file(path: &Path, text: &str) -> Result<()> {
 
         fs::write(import_path, ron::to_string(&article)?)?;
 
-
         // get the current history for file
         let history = database.select_current_history_for_file(&file)?;
 
@@ -311,6 +319,14 @@ fn write_file(path: &Path, text: &str) -> Result<()> {
 
         data.reader_state = Some(reader_state);
 
+        Ok(())
+    }
+
+    fn toggle(&self, data: &mut ApplicationState) -> Result<()> {
+        match data.current_view {
+            crate::View::Test => data.current_view = crate::View::Reader,
+            crate::View::Reader => data.current_view = crate::View::Test,
+        }
         Ok(())
     }
 }

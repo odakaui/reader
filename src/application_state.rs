@@ -2,10 +2,14 @@ use crate::{Article, Database, History, State};
 use druid::{Data, FontFamily, Lens};
 use std::{cell::RefCell, path::PathBuf, rc::Rc};
 
+#[derive(Clone, Debug, Data, PartialEq)]
+pub enum View {
+    Reader,
+    Test,
+}
+
 #[derive(Clone, Data, Lens)]
 pub struct ApplicationState {
-    pub font: Option<FontFamily>,
-
     pub reader_state: Option<ReaderState>,
 
     #[data(ignore)]
@@ -19,6 +23,8 @@ pub struct ApplicationState {
 
     #[data(ignore)]
     pub files_dir: PathBuf,
+
+    pub current_view: View,
 }
 
 #[derive(Clone, Data, Debug, Lens)]
