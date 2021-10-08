@@ -1,7 +1,7 @@
-use crate::{Article, Database, History, State, TokenInfo, Token};
+use crate::{Article, Database, History, State, TokenInfo};
 use chrono::{DateTime, Utc};
 use druid::{Data, Lens};
-use std::{cell::RefCell, path::PathBuf, rc::Rc};
+use std::{cell::RefCell, path::PathBuf, rc::Rc, sync::Arc};
 
 #[derive(Clone, Debug, Data, PartialEq)]
 pub enum View {
@@ -28,6 +28,8 @@ pub struct ApplicationState {
     pub files_dir: PathBuf,
 
     pub current_view: View,
+
+    pub unknown_tokens: Arc<Vec<TokenInfo>>,
 }
 
 #[derive(Clone, Data, Debug, Lens)]
@@ -59,7 +61,4 @@ pub struct StatisticsState {
 
     pub total_seen: i32,
     pub total_unknown: i32,
-
-    #[data(ignore)]
-    pub unknown_tokens: Vec<TokenInfo>,
 }

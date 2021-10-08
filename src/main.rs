@@ -5,12 +5,13 @@ use database::Database;
 use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
+use std::sync::Arc;
 use tokenizer::Tokenizer;
 
-pub use token::{Token, TokenInfo, POS};
 pub use application_state::{ApplicationState, ReaderState, StatisticsState, View};
 pub use history::History;
 pub use state::{Operation, Position, State};
+pub use token::{Token, TokenInfo, POS};
 
 pub mod app;
 pub mod application_state;
@@ -21,9 +22,9 @@ pub mod file;
 pub mod history;
 pub mod reader;
 pub mod state;
+pub mod statistics;
 pub mod token;
 pub mod tokenizer;
-pub mod statistics;
 
 pub fn main() -> Result<()> {
     let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("resources");
@@ -43,6 +44,7 @@ pub fn main() -> Result<()> {
         share_dir,
         files_dir,
         current_view: View::Reader,
+        unknown_tokens: Arc::new(Vec::new()),
     };
 
     launch_app(initial_state)?;

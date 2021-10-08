@@ -1,10 +1,11 @@
 use crate::{ApplicationState, StatisticsState};
 use anyhow::Result;
+use std::sync::Arc;
 
-pub fn statistics(data: &ApplicationState) -> Result<Option<StatisticsState>> {
+pub fn statistics(data: &mut ApplicationState) -> Result<()> {
     // return if reader_state is None
     if data.reader_state.is_none() {
-        return Ok(None)
+        return Ok(());
     }
 
     let reader_state = data.reader_state.as_ref().unwrap();
@@ -29,9 +30,10 @@ pub fn statistics(data: &ApplicationState) -> Result<Option<StatisticsState>> {
 
         total_seen,
         total_unknown,
-
-        unknown_tokens,
     };
 
-    Ok(Some(statistics_state))
+    data.statistics_state = Some(statistics_state);
+    data.unknown_tokens = Arc::new(unknown_tokens);
+
+    Ok(())
 }

@@ -1,7 +1,7 @@
 use super::{MARK_KNOWN, MARK_UNKNOWN, READER, REDO, STATISTICS, UNDO};
 use crate::{
-    compressor, reader, statistics, ApplicationState, Article, Line, Operation, Position, ReaderState, State,
-    Tokenizer, View,
+    compressor, reader, statistics, ApplicationState, Article, Line, Operation, Position,
+    ReaderState, State, Tokenizer, View,
 };
 use anyhow::{anyhow, Result};
 use druid::{commands, AppDelegate, Command, DelegateCtx, Env, Handled, Target};
@@ -337,7 +337,8 @@ impl Delegate {
     fn statistics(&self, data: &mut ApplicationState) -> Result<()> {
         data.current_view = View::Statistics;
 
-        data.statistics_state = statistics::statistics(data)?;
+        // set application state
+        statistics::statistics(data)?;
 
         Ok(())
     }

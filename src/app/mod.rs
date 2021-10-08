@@ -20,6 +20,7 @@ mod right_aligned_label;
 mod statistics_view;
 
 const HORIZONTAL_WIDGET_SPACING: f64 = 64.0;
+const VERTICAL_WIDGET_SPACING: f64 = 36.0;
 const BACKGROUND_TEXT_COLOR: Key<Color> = Key::new("background-text-color");
 const WINDOW_TITLE: LocalizedString<ApplicationState> = LocalizedString::new("Reader");
 
