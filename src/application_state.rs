@@ -1,16 +1,18 @@
-use crate::{Article, Database, History, State};
-use druid::{Data, FontFamily, Lens};
+use crate::{Article, Database, History, State, Token};
+use druid::{Data, Lens};
 use std::{cell::RefCell, path::PathBuf, rc::Rc};
 
 #[derive(Clone, Debug, Data, PartialEq)]
 pub enum View {
-    Reader,
     Empty,
+    Reader,
+    Statistics,
 }
 
 #[derive(Clone, Data, Lens)]
 pub struct ApplicationState {
     pub reader_state: Option<ReaderState>,
+    pub statistics_state: Option<StatisticsState>,
 
     #[data(ignore)]
     pub database: Rc<RefCell<Database>>,
@@ -42,4 +44,17 @@ pub struct ReaderState {
 
     #[data(ignore)]
     pub history: History,
+}
+
+#[derive(Clone, Data, Debug, Lens)]
+pub struct StatisticsState {
+    pub file_name: String,
+    pub start_date: String,
+    pub end_date: Option<String>,
+
+    pub total_seen: i32,
+    pub total_unknown: i32,
+
+    #[data(ignore)]
+    pub unknown_tokens: Vec<Token>,
 }

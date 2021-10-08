@@ -1,8 +1,9 @@
-use crate::{compressor, reader, ApplicationState, View, Article, Operation, ReaderState, State};
+use crate::{compressor, reader, ApplicationState, Article, Operation, ReaderState, State, View};
 use anyhow::{anyhow, Result};
 use delegate::Delegate;
 use druid::widget::{
-    Align, ClipBox, Controller, CrossAxisAlignment, Flex, Label, LineBreaking, MainAxisAlignment, ViewSwitcher,
+    Align, ClipBox, Controller, CrossAxisAlignment, Flex, Label, LineBreaking, MainAxisAlignment,
+    ViewSwitcher,
 };
 use druid::{
     AppDelegate, AppLauncher, Color, Command, Data, DelegateCtx, Env, FileDialogOptions, FileSpec,
@@ -13,9 +14,10 @@ use right_aligned_label::RightAlignedLabel;
 use std::boxed::Box;
 
 mod delegate;
-mod reader_view;
 mod empty_view;
+mod reader_view;
 mod right_aligned_label;
+mod statistics_view;
 
 const HORIZONTAL_WIDGET_SPACING: f64 = 64.0;
 const BACKGROUND_TEXT_COLOR: Key<Color> = Key::new("background-text-color");
@@ -26,6 +28,7 @@ const MARK_KNOWN: Selector<()> = Selector::new("MARK_KNOWN");
 const UNDO: Selector<()> = Selector::new("UNDO");
 const REDO: Selector<()> = Selector::new("REDO");
 const READER: Selector<()> = Selector::new("READER");
+const STATISTICS: Selector<()> = Selector::new("STATISTICS");
 
 pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
     // create the open file dialogue
@@ -86,14 +89,18 @@ pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
                         ),
                 )
                 .append(
-                    MenuDesc::new(LocalizedString::new("View"))
-                        .append(
-                            MenuItem::new(
-                                LocalizedString::new("Reader"),
-                                Command::new(READER, (), Target::Auto),
-                            )
-                            .hotkey(None, "r"),
-                        ),
+                    MenuDesc::new(LocalizedString::new("View")).append(
+                        MenuItem::new(
+                            LocalizedString::new("Reader"),
+                            Command::new(READER, (), Target::Auto),
+                        )
+                        .hotkey(None, "r")).append(
+                        MenuItem::new(
+                            LocalizedString::new("Reader"),
+                            Command::new(STATISTICS, (), Target::Auto),
+                        )
+                        .hotkey(None, "s"),
+                    ),
                 ),
         )
         .window_size((1000.0, 800.0));
@@ -113,25 +120,23 @@ pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
 }
 
 fn build_root_widget() -> impl Widget<ApplicationState> {
-    let switch_view = ViewSwitcher::new(|data: &ApplicationState, _: &Env| -> View {
-        let mut current_view = data.current_view.clone();
+    let switch_view = ViewSwitcher::new(
+        |data: &ApplicationState, _: &Env| -> View {
+            let mut current_view = data.current_view.clone();
 
-        // display empty_view if reader_state is None
-        if data.reader_state.is_none() && current_view == View::Reader {
-            current_view = View::Empty;
-        }
-
-        current_view
-    }, |current_view: &View, _: &ApplicationState, _: &Env| {
-        match current_view {
-            View::Reader => {
-                Box::new(reader_view::build_reader_view())
-            },
-            View::Empty => {
-                Box::new(empty_view::build_empty_view())
+            // display empty_view if reader_state is None
+            if data.reader_state.is_none() && current_view == View::Reader {
+                current_view = View::Empty;
             }
-        }
-    });
+
+            current_view
+        },
+        |current_view: &View, _: &ApplicationState, _: &Env| match current_view {
+            View::Reader => Box::new(reader_view::build_reader_view()),
+            View::Empty => Box::new(empty_view::build_empty_view()),
+            View::Statistics => Box::new(statistics_view::build_statistics_view()),
+        },
+    );
 
     WidgetExt::center(switch_view)
 }

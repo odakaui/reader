@@ -1,4 +1,4 @@
-use super::{MARK_KNOWN, MARK_UNKNOWN, REDO, UNDO, READER};
+use super::{MARK_KNOWN, MARK_UNKNOWN, READER, REDO, STATISTICS, UNDO};
 use crate::{
     compressor, reader, ApplicationState, Article, Line, Operation, Position, ReaderState, State,
     Tokenizer, View,
@@ -48,6 +48,13 @@ impl AppDelegate<ApplicationState> for Delegate {
             println!("Reader");
 
             self.reader(data).expect("[error] Reader failed.");
+
+            return Handled::Yes;
+        }
+         else if cmd.is(STATISTICS) {
+            println!("Statistics");
+
+            self.statistics(data).expect("[error] Statistics failed.");
 
             return Handled::Yes;
         }
@@ -324,6 +331,12 @@ impl Delegate {
 
     fn reader(&self, data: &mut ApplicationState) -> Result<()> {
         data.current_view = View::Reader;
+
+        Ok(())
+    }
+
+    fn statistics(&self, data: &mut ApplicationState) -> Result<()> {
+        data.current_view = View::Statistics;
 
         Ok(())
     }

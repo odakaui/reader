@@ -1,16 +1,14 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use app::launch_app;
 use article::{Article, Line};
 use database::Database;
 use std::cell::RefCell;
-use std::fs;
-use std::io::{prelude::*, BufReader};
 use std::path::Path;
 use std::rc::Rc;
 use token::{Token, POS};
 use tokenizer::Tokenizer;
 
-pub use application_state::{ApplicationState, ReaderState, View};
+pub use application_state::{ApplicationState, ReaderState, StatisticsState, View};
 pub use history::History;
 pub use state::{Operation, Position, State};
 
@@ -38,6 +36,7 @@ pub fn main() -> Result<()> {
 
     let initial_state = ApplicationState {
         reader_state: None,
+        statistics_state: None,
         database,
         config_dir,
         share_dir,
