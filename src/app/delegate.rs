@@ -1,7 +1,7 @@
-use super::{MARK_KNOWN, MARK_UNKNOWN, REDO, UNDO, TOGGLE};
+use super::{MARK_KNOWN, MARK_UNKNOWN, REDO, UNDO, READER};
 use crate::{
     compressor, reader, ApplicationState, Article, Line, Operation, Position, ReaderState, State,
-    Tokenizer,
+    Tokenizer, View,
 };
 use anyhow::{anyhow, Result};
 use druid::{commands, AppDelegate, Command, DelegateCtx, Env, Handled, Target};
@@ -44,10 +44,10 @@ impl AppDelegate<ApplicationState> for Delegate {
             self.redo(data).expect("[error] Redo failed.");
 
             return Handled::Yes;
-        } else if cmd.is(TOGGLE) {
-            println!("Toggle");
+        } else if cmd.is(READER) {
+            println!("Reader");
 
-            self.toggle(data).expect("[error] Toggle failed.");
+            self.reader(data).expect("[error] Reader failed.");
 
             return Handled::Yes;
         }
@@ -322,11 +322,9 @@ impl Delegate {
         Ok(())
     }
 
-    fn toggle(&self, data: &mut ApplicationState) -> Result<()> {
-        match data.current_view {
-            crate::View::Test => data.current_view = crate::View::Reader,
-            crate::View::Reader => data.current_view = crate::View::Test,
-        }
+    fn reader(&self, data: &mut ApplicationState) -> Result<()> {
+        data.current_view = View::Reader;
+
         Ok(())
     }
 }

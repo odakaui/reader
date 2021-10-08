@@ -14,7 +14,7 @@ use std::boxed::Box;
 
 mod delegate;
 mod reader_view;
-mod test_view;
+mod empty_view;
 mod right_aligned_label;
 
 const HORIZONTAL_WIDGET_SPACING: f64 = 64.0;
@@ -25,7 +25,7 @@ const MARK_UNKNOWN: Selector<()> = Selector::new("MARK_UNKNOWN");
 const MARK_KNOWN: Selector<()> = Selector::new("MARK_KNOWN");
 const UNDO: Selector<()> = Selector::new("UNDO");
 const REDO: Selector<()> = Selector::new("REDO");
-const TOGGLE: Selector<()> = Selector::new("TOGGLE");
+const READER: Selector<()> = Selector::new("READER");
 
 pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
     // create the open file dialogue
@@ -89,10 +89,10 @@ pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
                     MenuDesc::new(LocalizedString::new("View"))
                         .append(
                             MenuItem::new(
-                                LocalizedString::new("Toggle"),
-                                Command::new(TOGGLE, (), Target::Auto),
+                                LocalizedString::new("Reader"),
+                                Command::new(READER, (), Target::Auto),
                             )
-                            .hotkey(None, "t"),
+                            .hotkey(None, "r"),
                         ),
                 ),
         )
@@ -114,14 +114,21 @@ pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
 
 fn build_root_widget() -> impl Widget<ApplicationState> {
     let switch_view = ViewSwitcher::new(|data: &ApplicationState, _: &Env| -> View {
-        data.current_view.clone()
+        let mut current_view = data.current_view.clone();
+
+        // display empty_view if reader_state is None
+        if data.reader_state.is_none() && current_view == View::Reader {
+            current_view = View::Empty;
+        }
+
+        current_view
     }, |current_view: &View, _: &ApplicationState, _: &Env| {
         match current_view {
             View::Reader => {
                 Box::new(reader_view::build_reader_view())
             },
-            View::Test => {
-                Box::new(test_view::build_test_view())
+            View::Empty => {
+                Box::new(empty_view::build_empty_view())
             }
         }
     });

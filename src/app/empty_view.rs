@@ -3,7 +3,7 @@ use crate::{reader, ApplicationState, ReaderState};
 use druid::widget::{Align, Flex, Label};
 use druid::{Env, FontDescriptor, FontFamily, Widget, WidgetExt};
 
-pub fn build_test_view() -> impl Widget<ApplicationState> {
+pub fn build_empty_view() -> impl Widget<ApplicationState> {
     // set up the fonts - requires that Noto Sans CJK JP is installed
     let noto_cjk = FontFamily::new_unchecked("Noto Sans CJK JP");
     let primary_font = FontDescriptor::new(noto_cjk.clone()).with_size(64.0);

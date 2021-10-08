@@ -5,7 +5,7 @@ use std::{cell::RefCell, path::PathBuf, rc::Rc};
 #[derive(Clone, Debug, Data, PartialEq)]
 pub enum View {
     Reader,
-    Test,
+    Empty,
 }
 
 #[derive(Clone, Data, Lens)]
