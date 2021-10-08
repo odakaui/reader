@@ -33,3 +33,7 @@ Exceptions
 Unknown
 
 @TODO
+
+
+
+Improve the formatting on the statistics screen.
