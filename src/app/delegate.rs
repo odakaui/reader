@@ -101,6 +101,9 @@ impl Delegate {
         current_state.action = Some(action);
         reader_state.undo_stack.push(current_state.clone());
 
+        // update the previous current_state in the database
+        database.insert_state(&current_state)?;
+
         // set the current_state
         let next_position = reader::next_position(article, &current_state);
         let file_id = article.id;
@@ -112,6 +115,9 @@ impl Delegate {
             operation_num: next_operation_num,
             action: None,
         };
+
+        // add new current_state to the database
+        database.insert_state(&reader_state.current_state)?;
 
         // clear the redo stack
         reader_state.redo_stack.clear();
@@ -163,7 +169,10 @@ impl Delegate {
         // add the current state to the redo_stack
         let current_state = reader_state.current_state.clone();
 
-        reader_state.redo_stack.push(current_state);
+        reader_state.redo_stack.push(current_state.clone());
+
+        // delete current_state from the database
+        database.delete_state(&current_state)?;
 
         // set the current_state to the previous_state
         reader_state.current_state = previous_state;
@@ -232,21 +241,21 @@ impl Delegate {
             .collect()
     }
 
-    fn file_stem(path: &Path) -> Result<String> {
-        Ok(path
-            .file_stem()
-            .ok_or(anyhow!("Failed to parse file name."))?
-            .to_str()
-            .ok_or(anyhow!("Failed to convert file name."))?
-            .to_string())
-    }
+    // fn file_stem(path: &Path) -> Result<String> {
+    //     Ok(path
+    //         .file_stem()
+    //         .ok_or(anyhow!("Failed to parse file name."))?
+    //         .to_str()
+    //         .ok_or(anyhow!("Failed to convert file name."))?
+    //         .to_string())
+    // }
 
     fn file_name(path: &Path) -> Result<String> {
         Ok(path
             .file_name()
-            .ok_or(anyhow!("Failed to parse file name."))?
+            .ok_or_else(|| anyhow!("Failed to parse file name."))?
             .to_str()
-            .ok_or(anyhow!("Failed to convert file name."))?
+            .ok_or_else(|| anyhow!("Failed to convert file name."))?
             .to_string())
     }
 
@@ -259,16 +268,16 @@ impl Delegate {
         Ok(contents)
     }
 
-    fn write_file(path: &Path, text: &str) -> Result<()> {
-        fs::write(path, text)?;
+    // fn write_file(path: &Path, text: &str) -> Result<()> {
+    //     fs::write(path, text)?;
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     fn import(&self, data: &mut ApplicationState, path: &Path) -> Result<()> {
         // create files_dir
         let files_dir = &data.files_dir;
-        Self::create_dir(&files_dir)?;
+        Self::create_dir(files_dir)?;
 
         // add the file to the database
         let database = data.database.borrow_mut();

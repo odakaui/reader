@@ -1,5 +1,5 @@
 use super::{Database, HistoryToken};
-use crate::{History, Token};
+use crate::{History, State, Token};
 use anyhow::Result;
 use rusqlite::params;
 
@@ -29,7 +29,7 @@ impl Database {
                         self.update_history_token(&history_token)?;
                     }
                 }
-                Err(e) => {
+                Err(_) => {
                     println!("[error] The history_token does not exist.");
                 }
             }
@@ -43,6 +43,14 @@ impl Database {
             r#"DELETE FROM historytokens WHERE history_id=? AND token_id=?"#,
             params![history_token.history_id, history_token.token_id],
         )?;
+
+        Ok(())
+    }
+
+    pub fn delete_state(&self, state: &State) -> Result<()> {
+        self.conn.execute(
+            r#"DELETE FROM state WHERE file_id=?1 AND operation_num>=?2"#,
+            params![state.file_id, state.operation_num])?;
 
         Ok(())
     }

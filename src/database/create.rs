@@ -51,7 +51,8 @@ impl Database {
                 idx INTEGER NOT NULL,
                 line INTEGER NOT NULL,
                 operation_num INTEGER NOT NULL,
-                action INTEGER NOT NULL,
+                action INTEGER,
+                CONSTRAINT uq_state UNIQUE(file_id, operation_num)
                 FOREIGN KEY (file_id) REFERENCES files(id)
                 );
             "#,
