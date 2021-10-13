@@ -1,4 +1,4 @@
-use crate::token::{POS, POS::*};
+use super::super::{POS, POS::*};
 
 pub fn convert_pos(pos: &str) -> POS {
     match pos {

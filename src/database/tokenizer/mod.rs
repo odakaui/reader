@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use lindera;
-
-use crate::token::{Token, POS};
+use super::Token;
 
 pub mod converter;
 
@@ -45,8 +44,8 @@ impl Tokenizer {
 mod tests {
     use anyhow::Result;
 
-    use super::Tokenizer;
-    use super::{Token, POS::*};
+    use super::{Token, Tokenizer};
+    use super::super::POS::*;
 
     #[test]
     fn test_convert_tokens() -> Result<()> {

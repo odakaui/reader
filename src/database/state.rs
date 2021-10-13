@@ -154,11 +154,11 @@ pub fn select_state_for_operation_num(
     )?)
 }
 
-pub fn select_current_state(conn: &Connection, history_id: i32) -> Result<State> {
+pub fn select_state_current(conn: &Connection, history_id: i32, operation_num: i32) -> Result<State> {
     Ok(conn.query_row(
         r#"SELECT history_id, current_index, current_line, operation_num, action
-            FROM state WHERE history_id=?1 ORDER BY operation_num DESC"#,
-        params![history_id],
+            FROM state WHERE history_id=?1 AND operation_num=?2"#,
+        params![history_id, operation_num],
         |row| {
             let action = row
                 .get::<usize, Option<i32>>(5)?

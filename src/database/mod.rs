@@ -1,12 +1,19 @@
-use crate::Token;
 use anyhow::{anyhow, Result};
+pub use article::Article;
 pub use file::File;
 pub use history::History;
 pub use history_token::HistoryToken;
 use rusqlite::Connection;
 pub use state::State;
+pub use statistics::Statistics;
 use std::path;
+pub use token::{Token, POS};
+pub use token_info::TokenInfo;
 
+pub use word::Word;
+
+mod article;
+mod common;
 mod delete;
 mod file;
 mod history;
@@ -14,28 +21,41 @@ mod history_token;
 mod insert;
 mod select;
 mod state;
+mod statistics;
 mod table;
+mod token;
+mod token_info;
 mod update;
-
-pub struct Statistics {}
+mod word;
+mod tokenizer;
+mod reader_state;
 
 pub struct Database {
     conn: Connection,
-    ron_path: Box<path::PathBuf>,
+    state_file: path::PathBuf,
+    files_dir: path::PathBuf,
+    article: Option<Article>,
 }
 
 impl Database {
     pub fn new(
-        path: &path::Path,
-        ron_path: &path::PathBuf,
+        database_path: &path::Path,
+        state_file: &path::PathBuf,
+        files_dir: &path::PathBuf,
     ) -> Result<Self> {
         // create the database
-        let conn = Connection::open(path)?;
+        let conn = Connection::open(database_path)?;
         let database = Database {
             conn,
-            ron_path: Box::new(ron_path.clone()),
+            state_file: ron_path.to_path_buf(),
+            files_dir: files_path.to_path_buf(),
+            article: None,
         };
 
+        // create the files directory
+        common::create_dir(files_path)?;
+
+        // create the database tables
         table::create_files(&conn)?;
         table::create_history(&conn)?;
         table::create_history_tokens(&conn)?;
@@ -46,7 +66,9 @@ impl Database {
     }
 
     // add a file to the database and return a state object representing the initial state
-    pub fn import(&self, name: String) -> Result<State> {
+    pub fn import(&mut self, path: &path::PathBuf) -> Result<ReaderState> {
+        let name = common::file_name(path)?;
+
         // throw error if file had already been imported
         if file::select_file(&self.conn, &name).is_ok() {
             println!("{} has already been imported.", &name);
@@ -64,7 +86,7 @@ impl Database {
 
         // create state for the file
         state::insert_initial_state(&self.conn, history.id)?;
-        let state = state::select_current_state(&self.conn, history.id)?;
+        let state = state::select_state_current(&self.conn, history.id, history.current_operation)?;
 
         // set current_state for History
         history::update_history_with_current_operation(
@@ -72,6 +94,11 @@ impl Database {
             history.id,
             state.operation_num,
         )?;
+
+        // create the Article
+        self.article = Some(Article::create(&file, path, &self.files_dir)?);
+
+        // calculate ReaderState
 
         Ok(state)
     }
@@ -196,19 +223,19 @@ impl Database {
     }
 
     pub fn files(&self) -> Result<Vec<File>> {
-        unimplemented!()
+        Ok(file::select_files(&self.conn)?)
     }
 
     pub fn history(&self, file: &File) -> Result<Vec<History>> {
-        unimplemented!()
+        Ok(history::select_history(&self.conn, file.id)?)
     }
 
     pub fn statistics(&self, history: &History) -> Result<Statistics> {
-        unimplemented!()
+        Ok(statistics::select_statistics(&self.conn, history)?)
     }
 
-    pub fn unknown(&self) -> Result<Vec<Token>> {
-        unimplemented!()
+    pub fn unknown(&self) -> Result<Vec<TokenInfo>> {
+        history_token::select_history_tokens(&self.conn)?
     }
 
     pub fn toggle_learned(&self, token: &Token) -> Result<bool> {
