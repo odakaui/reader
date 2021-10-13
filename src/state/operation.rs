@@ -10,7 +10,7 @@ impl Operation {
     pub fn from_int(i: i32) -> Self {
         match i {
             0 => Operation::MarkKnown,
-            _ => Operation::MarkUnknown
+            _ => Operation::MarkUnknown,
         }
     }
 

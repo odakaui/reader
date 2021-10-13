@@ -1,5 +1,7 @@
 use super::Database;
-use crate::{database::HistoryToken, file::File, Operation, Position, State, History, Token, TokenInfo, POS};
+use crate::{
+    database::HistoryToken, file::File, History, Operation, Position, State, Token, TokenInfo, POS,
+};
 use anyhow::Result;
 use rusqlite::params;
 
@@ -144,21 +146,22 @@ impl Database {
 
     pub fn select_newest_state_for_file_id(&mut self, file_id: i32) -> Result<State> {
         Ok(self.conn.query_row(
-                r#"SELECT file_id, idx, line, operation_num, action FROM state
-                    WHERE file_id=? ORDER BY operation_num DESC"# , 
-                    params![file_id], 
-                    |row| {
-                        let position = Some(Position {
-                            index: row.get(1)?,
-                            line: row.get(2)?,
-                        });
+            r#"SELECT file_id, idx, line, operation_num, action FROM state
+                    WHERE file_id=? ORDER BY operation_num DESC"#,
+            params![file_id],
+            |row| {
+                let position = Some(Position {
+                    index: row.get(1)?,
+                    line: row.get(2)?,
+                });
 
-                        Ok(State {
-                            file_id: row.get(0)?,
-                            position,
-                            operation_num: row.get(3)?,
-                            action: Some(Operation::from_int(row.get(4)?)),
-                        })
-                    })?)
+                Ok(State {
+                    file_id: row.get(0)?,
+                    position,
+                    operation_num: row.get(3)?,
+                    action: Some(Operation::from_int(row.get(4)?)),
+                })
+            },
+        )?)
     }
 }

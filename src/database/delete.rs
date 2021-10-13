@@ -50,7 +50,8 @@ impl Database {
     pub fn delete_state(&self, state: &State) -> Result<()> {
         self.conn.execute(
             r#"DELETE FROM state WHERE file_id=?1 AND operation_num>=?2"#,
-            params![state.file_id, state.operation_num])?;
+            params![state.file_id, state.operation_num],
+        )?;
 
         Ok(())
     }

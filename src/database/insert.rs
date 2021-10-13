@@ -1,6 +1,6 @@
 use super::{Database, HistoryToken};
-use crate::{State, History, Token};
-use anyhow::{Result, anyhow};
+use crate::{History, State, Token};
+use anyhow::{anyhow, Result};
 use chrono::Utc;
 use rusqlite::params;
 
@@ -98,14 +98,24 @@ impl Database {
     }
 
     pub fn insert_state(&self, state: &State) -> Result<()> {
-        let position = state.position.as_ref().ok_or_else(|| anyhow!("[error] Position cannot be None"))?;
+        let position = state
+            .position
+            .as_ref()
+            .ok_or_else(|| anyhow!("[error] Position cannot be None"))?;
         let action = state.action.as_ref().map(|action| action.number());
 
         self.conn.execute(
             r#"INSERT OR IGNORE INTO state (file_id, idx, line, operation_num, action)
                 VALUES (?1, ?2, ?3, ?4, ?5)
                 ON CONFLICT(file_id, operation_num) DO UPDATE SET action=?5"#,
-                params![state.file_id, position.index, position.line, state.operation_num, action])?;
+            params![
+                state.file_id,
+                position.index,
+                position.line,
+                state.operation_num,
+                action
+            ],
+        )?;
 
         Ok(())
     }
