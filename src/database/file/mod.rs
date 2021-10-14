@@ -1,14 +1,8 @@
-use anyhow::Result;
-use rusqlite::{params, Connection};
-use serde::{Deserialize, Serialize};
-use std::{fs, path};
-use super::Token;
+use super::{Connection, Deserialize, path, Serialize, history, anyhow, common, state, ReaderState, Token, Result};
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Line {
-    pub sentence: String,
-    pub tokens: Vec<Token>,
-}
+pub use line::Line;
+
+pub mod line;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct File {
@@ -26,59 +20,40 @@ pub fn initialize(conn: &Connection) -> Result<()> {
         [],
     )?;
 
-    Ok(())
-}
-
-pub fn insert_file(conn: &Connection, name: &str) -> Result<()> {
-    conn.execute(
-        r#"INSERT OR IGNORE INTO files (name) VALUES (?1)"#,
-        params![name],
-    )?;
+    state::initialize(conn)?;
+    history::initialize(conn)?;
 
     Ok(())
 }
 
-pub fn select_file(conn: &Connection, name: &str) -> Result<File> {
-    Ok(conn.query_row(
-        r#"SELECT id, name FROM files WHERE name=?1"#,
-        params![name],
-        |row| {
-            Ok(File {
-                id: row.get(0)?,
-                name: row.get(1)?,
-            })
-        },
-    )?)
+pub fn import(conn: &Connection, source_file: &path::PathBuf, target_dir: &path::PathBuf) -> Result<ReaderState>{
+    let file_name = common::file_name(source_file)?;
+
+    if exists(&file_name) {
+        return Err(anyhow!("{} has already been imported"))
+    }
+
+    
+
+    unimplemented!()
 }
 
-pub fn select_file_for_id(conn: &Connection, id: i32) -> Result<File> {
-    Ok(conn.query_row(
-        r#"SELECT id, name FROM files WHERE id=?1"#,
-        params![id],
-        |row| {
-            Ok(File {
-                id: row.get(0)?,
-                name: row.get(1)?,
-            })
-        },
-    )?)
+pub fn list() {
+    unimplemented!()
 }
 
-pub fn select_files(conn: &Connection) -> Result<Vec<File>> {
-    let mut stmt = conn.prepare(r#"SELECT id, name FROM files ORDER BY id ASC"#)?;
-
-    Ok(stmt
-        .query_map([], |row| Ok(File::new(row.get(0)?, row.get(1)?)))?
-        .flatten()
-        .collect())
+pub fn load() {
+    unimplemented!()
 }
 
-pub fn load_file(path: &path::Path) -> Result<File> {
-    Ok(ron::from_str(&fs::read_to_string(path)?)?)
+pub fn open() {
+    unimplemented!()
 }
 
-pub fn save_file(path: &path::Path, file: &File) -> Result<()> {
-    fs::write(path, &ron::to_string(file)?)?;
+pub fn delete() {
+    unimplemented!()
+}
 
-    Ok(())
+fn exists(file_name: &str) -> bool {
+    unimplemented!()
 }
