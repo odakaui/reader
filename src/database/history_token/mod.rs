@@ -1,14 +1,16 @@
 use anyhow::Result;
 use rusqlite::{params, Connection};
+use druid::{Data, Lens};
 
 use super::token;
 use super::Token;
 
+#[derive(Clone, Debug, PartialEq, Data, Lens)]
 pub struct HistoryToken {
-    history_id: i32,
-    token_id: i32,
-    total_seen: i32,
-    total_unknown: i32,
+    pub history_id: i32,
+    pub token_id: i32,
+    pub total_seen: i32,
+    pub total_unknown: i32,
 }
 
 pub fn initialize(conn: &Connection) -> Result<()> {
@@ -72,7 +74,11 @@ pub fn delete_history_tokens(
         let history_token = select_history_token(conn, history_id, token_id)?;
 
         let total_seen = history_token.total_seen - 1;
-        let total_unknown = if history_token.total_unknown - unknown < 0 { 0 } else { history_token.total_unknown - unknown };
+        let total_unknown = if history_token.total_unknown - unknown < 0 {
+            0
+        } else {
+            history_token.total_unknown - unknown
+        };
 
         if total_seen < 1 && total_unknown < 1 {
             conn.execute(
@@ -88,6 +94,26 @@ pub fn delete_history_tokens(
     }
 
     Ok(())
+}
+
+pub fn select_history_tokens(conn: &Connection, history_id: i32) -> Result<Vec<HistoryToken>> {
+    let mut stmt = conn.prepare(
+        r#"SELECT history_id, token_id, total_seen, total_unknown FROM history_tokens WHERE history_id=?1"#
+    )?;
+
+    let results = stmt
+        .query_map(params![history_id], |row| {
+            Ok(HistoryToken {
+                history_id: row.get(0)?,
+                token_id: row.get(1)?,
+                total_seen: row.get(2)?,
+                total_unknown: row.get(3)?,
+            })
+        })?
+        .flatten()
+        .collect();
+
+    Ok(results)
 }
 
 fn select_history_token(conn: &Connection, history_id: i32, token_id: i32) -> Result<HistoryToken> {

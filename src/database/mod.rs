@@ -10,8 +10,10 @@ use tokenizer::Tokenizer;
 pub use database_error::DatabaseError;
 pub use file::word;
 pub use file::Word;
+pub use history_token::HistoryToken;
 pub use reader_state::{ReaderState, Status};
 pub use state::Operation;
+pub use statistics_state::{StatisticsState, TokenInfo};
 
 mod common;
 mod database_error;
@@ -20,6 +22,7 @@ mod history;
 mod history_token;
 mod reader_state;
 mod state;
+mod statistics_state;
 mod token;
 mod tokenizer;
 
@@ -58,10 +61,10 @@ impl Database {
             Ok(file) => {
                 self.file = Some(file.clone());
 
-                let state =  file::current_state(conn, &file)?;
+                let state = file::current_state(conn, &file)?;
 
                 Ok(ReaderState::new(&file, &state))
-            },
+            }
             Err(e) => {
                 if is_error(&e, &DatabaseError::FileExists) {
                     println!("{}", e);
@@ -193,6 +196,13 @@ impl Database {
             }
         }
     }
+
+    pub fn statistics(&self) -> Result<StatisticsState> {
+        let conn = &self.conn;
+        let file = get_file(&self.file)?;
+
+        file::statistics(conn, &file)
+    }
 }
 
 fn get_file(file: &Option<File>) -> Result<File> {
@@ -207,7 +217,6 @@ fn get_current(conn: &Connection, file: &File) -> Result<ReaderState> {
 }
 
 fn is_error(e: &anyhow::Error, database_error: &DatabaseError) -> bool {
-    e.downcast_ref::<DatabaseError>().map_or(false, |e| {
-        e == database_error
-    })
+    e.downcast_ref::<DatabaseError>()
+        .map_or(false, |e| e == database_error)
 }

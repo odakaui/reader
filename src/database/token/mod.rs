@@ -43,6 +43,20 @@ pub fn delete_token(conn: &Connection, lemma: &str) -> Result<()> {
     Ok(())
 }
 
+pub fn select_token(conn: &Connection, id: i32) -> Result<Token> {
+    Ok(conn.query_row(
+        r#"SELECT lemma, text, pos FROM tokens WHERE id=?1"#,
+        params![id],
+        |row| {
+            Ok(Token {
+                lemma: row.get(0)?,
+                text: row.get(1)?,
+                pos: POS::to_pos(row.get(2)?),
+            })
+        },
+    )?)
+}
+
 pub fn select_token_id(conn: &Connection, lemma: &str) -> Result<i32> {
     Ok(conn.query_row(
         r#"SELECT id FROM tokens WHERE lemma=?1"#,

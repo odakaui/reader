@@ -1,6 +1,6 @@
+use super::DatabaseError;
 use anyhow::{anyhow, Result};
 use rusqlite::{params, Connection};
-use super::DatabaseError;
 
 pub use operation::Operation;
 

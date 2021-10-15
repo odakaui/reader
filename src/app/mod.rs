@@ -18,6 +18,7 @@ mod empty_view;
 mod eof_view;
 mod reader_view;
 mod right_aligned_label;
+mod statistics_view;
 
 const HORIZONTAL_WIDGET_SPACING: f64 = 64.0;
 const VERTICAL_WIDGET_SPACING: f64 = 36.0;
@@ -141,7 +142,7 @@ fn build_root_widget() -> impl Widget<ApplicationState> {
         |current_view: &View, _: &ApplicationState, _: &Env| match current_view {
             View::Reader => Box::new(reader_view::build_reader_view()),
             View::Empty => Box::new(empty_view::build_empty_view()),
-            View::Statistics => Box::new(empty_view::build_empty_view()),
+            View::Statistics => Box::new(statistics_view::build_statistics_view()),
             View::Eof => Box::new(eof_view::build_empty_view()),
         },
     );

@@ -1,9 +1,11 @@
 use super::{common, history, history_token, state};
-use super::{DatabaseError, Operation, Position, State, Token, Tokenizer, POS};
-use anyhow::{anyhow, Result, Context};
+use super::{DatabaseError, Operation, Position, State, StatisticsState, TokenInfo, Token, Tokenizer, POS};
+use anyhow::{anyhow, Context, Result};
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::{fs, path};
+use std::sync::Arc;
+use std::cmp::Reverse;
 
 pub use line::Line;
 pub use word::Word;
@@ -145,7 +147,8 @@ pub fn next(conn: &Connection, file: &File, action: &Operation) -> Result<State>
 pub fn undo(conn: &Connection, file: &File) -> Result<State> {
     let current_state = current_state(conn, file)?;
 
-    let previous_state = state::undo_state(conn, &current_state).context("failed to select previous state.")?;
+    let previous_state =
+        state::undo_state(conn, &current_state).context("failed to select previous state.")?;
 
     let word = word(file, &previous_state).context("failed to retreieve word.")?;
     let is_unknown = previous_state
@@ -153,12 +156,8 @@ pub fn undo(conn: &Connection, file: &File) -> Result<State> {
         .as_ref()
         .expect("previous_state has no action")
         == &Operation::MarkUnknown;
-    history_token::delete_history_tokens(
-        conn,
-        previous_state.history_id,
-        &word.tokens,
-        is_unknown,
-    ).context("failed to delete tokens.")?;
+    history_token::delete_history_tokens(conn, previous_state.history_id, &word.tokens, is_unknown)
+        .context("failed to delete tokens.")?;
 
     Ok(previous_state)
 }
@@ -190,6 +189,30 @@ pub fn current_state(conn: &Connection, file: &File) -> Result<State> {
     let state = state::select_state(conn, state_id)?;
 
     Ok(state)
+}
+
+pub fn statistics(conn: &Connection, file: &File) -> Result<StatisticsState> {
+    let history = history::select_history(conn, history::current_history(conn, file.id)?)?;
+    let mut unknown = TokenInfo::to_token_info(conn, history.id)?;
+
+    unknown.sort_by_key(|b| Reverse(b.total_unknown())); 
+
+    let mut total_seen = 0;
+    let mut total_unknown = 0;
+
+    for token in unknown.iter() {
+        total_seen += token.total_seen();
+        total_unknown += token.total_unknown();
+    }
+
+    Ok(StatisticsState {
+        name: file.name.to_string(),
+        start_date: history.start_date,
+        end_date: history.end_date,
+        unknown: Arc::new(unknown),
+        total_seen,
+        total_unknown,
+    })
 }
 
 fn save_file(source_file: &path::PathBuf, target_dir: &path::PathBuf, name: &str) -> Result<()> {

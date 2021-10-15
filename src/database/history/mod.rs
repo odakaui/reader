@@ -58,7 +58,7 @@ pub fn insert_history(conn: &Connection, file_id: i32) -> Result<History> {
     Ok(history)
 }
 
-fn select_history(conn: &Connection, id: i32) -> Result<History> {
+pub fn select_history(conn: &Connection, id: i32) -> Result<History> {
     Ok(conn.query_row(
         r#"SELECT id, file_id, start_date, end_date FROM history WHERE id=?1"#,
         params![id],

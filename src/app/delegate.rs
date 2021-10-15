@@ -104,6 +104,9 @@ impl Delegate {
     }
 
     fn statistics(&self, data: &mut ApplicationState) -> Result<()> {
+        let database = data.database.borrow_mut();
+        data.statistics_state = database.statistics()?;
+
         data.current_view = View::Statistics;
 
         Ok(())
