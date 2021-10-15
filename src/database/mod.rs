@@ -7,12 +7,14 @@ use state::{Position, State};
 use token::{Token, POS};
 use tokenizer::Tokenizer;
 
+pub use database_error::DatabaseError;
 pub use file::word;
 pub use file::Word;
-pub use reader_state::{Status, ReaderState};
+pub use reader_state::{ReaderState, Status};
 pub use state::Operation;
 
 mod common;
+mod database_error;
 mod file;
 mod history;
 mod history_token;
@@ -78,11 +80,11 @@ impl Database {
 
     pub fn reset(&self) -> Result<ReaderState> {
         if self.file.is_none() {
-            return Ok(ReaderState::empty())    
+            return Ok(ReaderState::empty());
         }
 
         let conn = &self.conn;
-        let file = self.file()?;
+        let file = get_file(&self.file)?;
 
         let state = file::reset(conn, &file)?;
 
@@ -93,11 +95,11 @@ impl Database {
 
     pub fn current(&mut self) -> Result<ReaderState> {
         if self.file.is_none() {
-            return Ok(ReaderState::empty())    
+            return Ok(ReaderState::empty());
         }
 
         let conn = &self.conn;
-        let file = self.file()?;
+        let file = get_file(&self.file)?;
 
         let state = file::current_state(conn, &file)?;
 
@@ -107,100 +109,95 @@ impl Database {
 
     pub fn next(&self, action: &Operation) -> Result<ReaderState> {
         if self.file.is_none() {
-            return Ok(ReaderState::empty())    
+            return Ok(ReaderState::empty());
         }
 
         let conn = &self.conn;
-        let file = self.file()?;
+        let file = get_file(&self.file)?;
 
-        if let Ok(state) = file::next(conn, &file, action) {
-            let reader_state = ReaderState::new(&file, &state);
-            Ok(reader_state)
-        } else {
-            println!("eof");
-            
-            let state = file::current_state(conn, &file)?;
+        match file::next(conn, &file, action) {
+            Ok(state) => {
+                let reader_state = ReaderState::new(&file, &state);
+                Ok(reader_state)
+            }
+            Err(e) => {
+                if is_error(&e, &DatabaseError::Eof) {
+                    println!("eof");
 
-            let reader_state = ReaderState::new(&file, &state);
-            Ok(reader_state)
+                    Ok(get_current(conn, &file)?)
+                } else {
+                    Err(e)
+                }
+            }
         }
     }
 
     pub fn undo(&self) -> Result<ReaderState> {
         if self.file.is_none() {
-            return Ok(ReaderState::empty())    
+            return Ok(ReaderState::empty());
         }
 
         let conn = &self.conn;
-        let file = self.file()?;
+        let file = get_file(&self.file)?;
 
-        if let Ok(state) = file::undo(conn, &file) {
-            let reader_state = ReaderState::new(&file, &state);
-            Ok(reader_state)
-        } else {
-            println!("undo stack is empty.");
-            
-            let state = file::current_state(conn, &file)?;
+        match file::undo(conn, &file) {
+            Ok(state) => {
+                let reader_state = ReaderState::new(&file, &state);
 
-            let reader_state = ReaderState::new(&file, &state);
-            Ok(reader_state)
+                Ok(reader_state)
+            }
+            Err(e) => {
+                if is_error(&e, &DatabaseError::UndoEmpty) {
+                    println!("undo stack is empty.");
+
+                    Ok(get_current(conn, &file)?)
+                } else {
+                    Err(e)
+                }
+            }
         }
-
     }
 
     pub fn redo(&self) -> Result<ReaderState> {
         if self.file.is_none() {
-            return Ok(ReaderState::empty())    
+            return Ok(ReaderState::empty());
         }
 
         let conn = &self.conn;
-        let file = self.file()?;
+        let file = get_file(&self.file)?;
 
-        if let Ok(state) = file::redo(conn, &file) {
-            let reader_state = ReaderState::new(&file, &state);
-            Ok(reader_state)
-        } else {
-            println!("redo stack is empty.");
-            
-            let state = file::current_state(conn, &file)?;
+        match file::redo(conn, &file) {
+            Ok(state) => {
+                let reader_state = ReaderState::new(&file, &state);
 
-            let reader_state = ReaderState::new(&file, &state);
-            Ok(reader_state)
+                Ok(reader_state)
+            }
+            Err(e) => {
+                if is_error(&e, &DatabaseError::RedoEmpty) {
+                    println!("redo stack is empty.");
+
+                    Ok(get_current(conn, &file)?)
+                } else {
+                    Err(e)
+                }
+            }
         }
-
     }
+}
 
-    fn file(&self) -> Result<File> {
-        Ok(self
-            .file.as_ref()
-            .ok_or_else(|| anyhow!("There is no currently open file."))?.clone())
-    }
+fn get_file(file: &Option<File>) -> Result<File> {
+    Ok(file.as_ref().ok_or(DatabaseError::FileOpen)?.clone())
+}
 
-    // pub fn undo(&self, state: &State) -> Result<State> {
-    //     unimplemented!()
-    // }
+fn get_current(conn: &Connection, file: &File) -> Result<ReaderState> {
+    let state = file::current_state(conn, file)?;
 
-    // pub fn redo(&self, state: &State) -> Result<State> {
-    //     unimplemented!()
-    // }
+    let reader_state = ReaderState::new(file, &state);
+    Ok(reader_state)
+}
 
-    // pub fn files(&self) -> Result<Vec<File>> {
-    //     unimplemented!()
-    // }
-
-    // pub fn history(&self, file: &File) -> Result<Vec<History>> {
-    //     unimplemented!()
-    // }
-
-    // pub fn statistics(&self, history: &History) -> Result<Statistics> {
-    //     unimplemented!()
-    // }
-
-    // pub fn unknown(&self) -> Result<Vec<TokenInfo>> {
-    //     unimplemented!()
-    // }
-
-    // pub fn toggle_learned(&self, token: &Token) -> Result<bool> {
-    //     unimplemented!()
-    // }
+fn is_error(e: &anyhow::Error, database_error: &DatabaseError) -> bool {
+    e.downcast_ref::<DatabaseError>().map_or(false, |e| {
+        e == database_error
+    })
 }

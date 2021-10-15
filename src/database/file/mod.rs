@@ -1,6 +1,6 @@
 use super::{common, history, history_token, state};
-use super::{Operation, Position, State, Token, Tokenizer, POS};
-use anyhow::{anyhow, Result};
+use super::{DatabaseError, Operation, Position, State, Token, Tokenizer, POS};
+use anyhow::{anyhow, Result, Context};
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::{fs, path};
@@ -44,7 +44,7 @@ pub fn insert_file(
     let name = common::file_name(source_file)?;
 
     if exists(conn, &target_dir, &name) {
-        return Err(anyhow!("{} has already been imported", name));
+        return Err(DatabaseError::FileExists.into());
     }
 
     save_file(source_file, target_dir, &name)?;
@@ -98,7 +98,7 @@ pub fn next(conn: &Connection, file: &File, action: &Operation) -> Result<State>
     current_state.action = Some(action.to_owned());
 
     if current_state.position.is_none() {
-        return Err(anyhow!("end of file has been reached."));
+        return Err(DatabaseError::Eof.into());
     }
 
     let line = current_state.position.as_ref().unwrap().line;
@@ -148,23 +148,30 @@ pub fn next(conn: &Connection, file: &File, action: &Operation) -> Result<State>
 pub fn undo(conn: &Connection, file: &File) -> Result<State> {
     let current_state = current_state(conn, file)?;
 
-    let previous_state = state::undo_state(conn, &current_state)?;
+    let previous_state = state::undo_state(conn, &current_state).context("failed to select previous state.")?;
 
-    let word = word(file, &previous_state)?;
-    let is_unknown = previous_state.action.as_ref().expect("action is not set") == &Operation::MarkUnknown;
+    let word = word(file, &previous_state).context("failed to retreieve word.")?;
+    let is_unknown = previous_state
+        .action
+        .as_ref()
+        .expect("previous_state has no action")
+        == &Operation::MarkUnknown;
     history_token::delete_history_tokens(
         conn,
         previous_state.history_id,
         &word.tokens,
         is_unknown,
-    )?;
+    ).context("failed to delete tokens.")?;
 
     Ok(previous_state)
 }
 
 pub fn redo(conn: &Connection, file: &File) -> Result<State> {
     let current_state = current_state(conn, file)?;
-    let action = current_state.action.as_ref().ok_or(anyhow!("action is not set"))?;
+    let action = current_state
+        .action
+        .as_ref()
+        .ok_or(anyhow!("current_state has no action"))?;
 
     let word = word(file, &current_state)?;
     let is_unknown = action == &Operation::MarkUnknown;
@@ -174,7 +181,7 @@ pub fn redo(conn: &Connection, file: &File) -> Result<State> {
 }
 
 pub fn current_file(conn: &Connection, target_dir: &path::PathBuf) -> Result<File> {
-    let id = current_file::get_current_file(conn)?.ok_or(anyhow!("current_file is not set."))?;
+    let id = current_file::get_current_file(conn)?.ok_or(DatabaseError::FileOpen)?;
 
     Ok(select_file(conn, target_dir, id)?)
 }
@@ -219,11 +226,12 @@ fn exists(conn: &Connection, target_dir: &path::PathBuf, file_name: &str) -> boo
         r#"SELECT id FROM files WHERE name=?1"#,
         params![file_name],
         |row| Ok(row.get::<usize, i32>(0)),
-    ).is_ok()
+    )
+    .is_ok()
 }
 
 fn word(file: &File, state: &State) -> Result<Word> {
-    let position = state.position.as_ref().ok_or(anyhow!("position is not set"))?;
+    let position = state.position.as_ref().ok_or(DatabaseError::Eof)?;
     let index = position.index;
     let line = position.line;
 

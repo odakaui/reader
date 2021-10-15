@@ -31,16 +31,14 @@ pub fn initialize(conn: &Connection) -> Result<()> {
 pub fn insert_token(conn: &Connection, token: &Token) -> Result<()> {
     conn.execute(
         r#"INSERT OR IGNORE INTO tokens (text, lemma, pos) VALUES (?1, ?2, ?3)"#,
-        params![token.text, token.lemma, token.pos.to_int()])?;
+        params![token.text, token.lemma, token.pos.to_int()],
+    )?;
 
     Ok(())
 }
 
 pub fn delete_token(conn: &Connection, lemma: &str) -> Result<()> {
-    conn.execute(
-        r#"DELETE FROM tokens WHERE lemma=?1"#,
-        params![lemma]
-        )?;
+    conn.execute(r#"DELETE FROM tokens WHERE lemma=?1"#, params![lemma])?;
 
     Ok(())
 }
@@ -52,4 +50,3 @@ pub fn select_token_id(conn: &Connection, lemma: &str) -> Result<i32> {
         |row| Ok(row.get::<usize, i32>(0)?),
     )?)
 }
-

@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use rusqlite::{params, Connection};
+use super::DatabaseError;
 
 pub use operation::Operation;
 
@@ -117,7 +118,7 @@ pub fn undo_state(conn: &Connection, state: &State) -> Result<State> {
                 operation_num: row.get(4)?,
                 action: row.get::<usize, Option<i32>>(5)?.map(|action| Operation::from_int(action)),
             })
-        }).or(Err(anyhow!("undo stack is empty.")))?;
+        }).or(Err(DatabaseError::UndoEmpty))?;
 
     current_state::set_current_state(conn, history_id, previous_state.id)?;
 
@@ -151,7 +152,7 @@ pub fn redo_state(conn: &Connection, state: &State) -> Result<State> {
                 operation_num: row.get(4)?,
                 action: row.get::<usize, Option<i32>>(5)?.map(|action| Operation::from_int(action)),
             })
-        }).or(Err(anyhow!("undo stack is empty.")))?;
+        }).or(Err(DatabaseError::RedoEmpty))?;
 
     current_state::set_current_state(conn, history_id, next_state.id)?;
 
@@ -227,8 +228,11 @@ fn clear_redo_stack(conn: &Connection, history_id: i32) -> Result<()> {
 fn update_state(conn: &Connection, state: &State) -> Result<()> {
     conn.execute(
         r#"UPDATE state SET action=?1 WHERE id=?2"#,
-        params![state.action.as_ref().expect("action is not set").to_int(), state.id]
-        )?;
+        params![
+            state.action.as_ref().expect("action is not set").to_int(),
+            state.id
+        ],
+    )?;
 
     Ok(())
 }

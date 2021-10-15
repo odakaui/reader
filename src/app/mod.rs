@@ -15,9 +15,9 @@ use std::boxed::Box;
 
 mod delegate;
 mod empty_view;
+mod eof_view;
 mod reader_view;
 mod right_aligned_label;
-mod eof_view;
 
 const HORIZONTAL_WIDGET_SPACING: f64 = 64.0;
 const VERTICAL_WIDGET_SPACING: f64 = 36.0;
@@ -132,7 +132,7 @@ fn build_root_widget() -> impl Widget<ApplicationState> {
                 match data.reader_state.status {
                     Status::Empty => current_view = View::Empty,
                     Status::Eof => current_view = View::Eof,
-                    Status::State => {},
+                    Status::State => {}
                 }
             }
 

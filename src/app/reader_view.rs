@@ -25,18 +25,18 @@ pub fn build_reader_view() -> impl Widget<ApplicationState> {
     )
     .lens(ApplicationState::reader_state.then(ReaderState::read));
 
-    let center_label = Label::new(|word: &Word, _env: &Env| word.text.clone() )
+    let center_label = Label::new(|word: &Word, _env: &Env| word.text.clone())
         .with_font(primary_font)
         .lens(ApplicationState::reader_state.then(ReaderState::current));
 
     let right_label = Label::new(|words: &Arc<Vec<Word>>, _env: &Env| {
-            words
-                .iter()
-                .fold(String::new(), |text, word| text + &word.text)
+        words
+            .iter()
+            .fold(String::new(), |text, word| text + &word.text)
     })
-        .with_font(secondary_font)
-        .with_text_color(BACKGROUND_TEXT_COLOR)
-        .lens(ApplicationState::reader_state.then(ReaderState::unread));
+    .with_font(secondary_font)
+    .with_text_color(BACKGROUND_TEXT_COLOR)
+    .lens(ApplicationState::reader_state.then(ReaderState::unread));
 
     let layout = Flex::row()
         .must_fill_main_axis(true)

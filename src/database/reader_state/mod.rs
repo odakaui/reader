@@ -6,7 +6,7 @@ use std::sync::Arc;
 pub enum Status {
     Empty,
     Eof,
-    State
+    State,
 }
 
 #[derive(Clone, Debug, Data, Lens)]
@@ -20,7 +20,7 @@ pub struct ReaderState {
 impl ReaderState {
     pub fn new(file: &File, state: &State) -> Self {
         if state.position.is_none() {
-            return Self::eof()
+            return Self::eof();
         }
 
         let position = state.position.as_ref().unwrap();
@@ -41,7 +41,7 @@ impl ReaderState {
     }
 
     pub fn empty() -> Self {
-         ReaderState {
+        ReaderState {
             read: Arc::new(Vec::new()),
             unread: Arc::new(Vec::new()),
             current: Word::empty(),
@@ -50,7 +50,7 @@ impl ReaderState {
     }
 
     pub fn eof() -> Self {
-         ReaderState {
+        ReaderState {
             read: Arc::new(Vec::new()),
             unread: Arc::new(Vec::new()),
             current: Word::empty(),
@@ -63,7 +63,7 @@ fn read(position: &Position, words: &[Word]) -> Arc<Vec<Word>> {
     let index = position.index;
 
     if words.is_empty() {
-        return Arc::new(vec![Word::empty()])
+        return Arc::new(vec![Word::empty()]);
     }
 
     Arc::new(words[..index].to_vec())
@@ -73,7 +73,7 @@ fn unread(position: &Position, words: &[Word]) -> Arc<Vec<Word>> {
     let index = position.index;
 
     if words.is_empty() {
-        return Arc::new(vec![Word::empty()])
+        return Arc::new(vec![Word::empty()]);
     }
 
     Arc::new(words[index + 1..].to_vec())
@@ -83,7 +83,7 @@ fn current(position: &Position, words: &[Word]) -> Word {
     let index = position.index;
 
     if words.is_empty() {
-        return Word::empty()
+        return Word::empty();
     }
 
     words[index].clone()

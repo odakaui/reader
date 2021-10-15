@@ -72,9 +72,9 @@ pub fn delete_history_tokens(
         let history_token = select_history_token(conn, history_id, token_id)?;
 
         let total_seen = history_token.total_seen - 1;
-        let total_unknown = history_token.total_unknown - unknown;
+        let total_unknown = if history_token.total_unknown - unknown < 0 { 0 } else { history_token.total_unknown - unknown };
 
-        if total_seen < 1 || total_unknown < 1 {
+        if total_seen < 1 && total_unknown < 1 {
             conn.execute(
                 r#"DELETE FROM history_tokens WHERE history_id=?1 AND token_id=?2"#,
                 params![history_id, token_id],

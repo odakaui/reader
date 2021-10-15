@@ -18,13 +18,12 @@ impl Word {
     }
 
     pub fn new(tokens: &Vec<Token>) -> Self {
-        let text = tokens.iter().fold(String::new(), |text, token| text + &token.text);
+        let text = tokens
+            .iter()
+            .fold(String::new(), |text, token| text + &token.text);
         let tokens = Arc::new(tokens.clone());
 
-        Word {
-            text,
-            tokens,
-        }
+        Word { text, tokens }
     }
 }
 

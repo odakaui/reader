@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use app::launch_app;
 use database::word;
-use database::{Database, Operation, Word, Status, ReaderState};
+use database::{Database, Operation, ReaderState, Status, Word};
 
 pub use application_state::{ApplicationState, View};
 
