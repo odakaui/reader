@@ -135,9 +135,6 @@ pub fn next(conn: &Connection, file: &File, action: &Operation) -> Result<State>
 
     let next_state = state::next_state(conn, &current_state, &position)?;
 
-    println!("{:?}", state::select_state(conn, current_state.id)?);
-    println!("{:?}", state::select_state(conn, next_state.id)?);
-
     let word = word(file, &current_state)?;
     let is_unknown = action == &Operation::MarkUnknown;
     history_token::insert_history_tokens(conn, current_state.history_id, &word.tokens, is_unknown)?;
