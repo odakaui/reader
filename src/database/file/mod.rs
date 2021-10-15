@@ -151,7 +151,7 @@ pub fn undo(conn: &Connection, file: &File) -> Result<State> {
     let previous_state = state::undo_state(conn, &current_state)?;
 
     let word = word(file, &previous_state)?;
-    let is_unknown = previous_state.action.as_ref().expect("action was None") == &Operation::MarkUnknown;
+    let is_unknown = previous_state.action.as_ref().expect("action is not set") == &Operation::MarkUnknown;
     history_token::delete_history_tokens(
         conn,
         previous_state.history_id,
@@ -227,5 +227,9 @@ fn word(file: &File, state: &State) -> Result<Word> {
     let index = position.index;
     let line = position.line;
 
-    Ok(file.lines[line].words[index].clone())
+    if file.lines[line].words.is_empty() {
+        Ok(Word::empty())
+    } else {
+        Ok(file.lines[line].words[index].clone())
+    }
 }

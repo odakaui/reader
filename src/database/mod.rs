@@ -113,10 +113,17 @@ impl Database {
         let conn = &self.conn;
         let file = self.file()?;
 
-        let state = file::next(conn, &file, action)?;
+        if let Ok(state) = file::next(conn, &file, action) {
+            let reader_state = ReaderState::new(&file, &state);
+            Ok(reader_state)
+        } else {
+            println!("eof");
+            
+            let state = file::current_state(conn, &file)?;
 
-        let reader_state = ReaderState::new(&file, &state);
-        Ok(reader_state)
+            let reader_state = ReaderState::new(&file, &state);
+            Ok(reader_state)
+        }
     }
 
     pub fn undo(&self) -> Result<ReaderState> {
@@ -127,10 +134,18 @@ impl Database {
         let conn = &self.conn;
         let file = self.file()?;
 
-        let state = file::undo(conn, &file)?;
+        if let Ok(state) = file::undo(conn, &file) {
+            let reader_state = ReaderState::new(&file, &state);
+            Ok(reader_state)
+        } else {
+            println!("undo stack is empty.");
+            
+            let state = file::current_state(conn, &file)?;
 
-        let reader_state = ReaderState::new(&file, &state);
-        Ok(reader_state)
+            let reader_state = ReaderState::new(&file, &state);
+            Ok(reader_state)
+        }
+
     }
 
     pub fn redo(&self) -> Result<ReaderState> {
@@ -141,10 +156,18 @@ impl Database {
         let conn = &self.conn;
         let file = self.file()?;
 
-        let state = file::redo(conn, &file)?;
+        if let Ok(state) = file::redo(conn, &file) {
+            let reader_state = ReaderState::new(&file, &state);
+            Ok(reader_state)
+        } else {
+            println!("redo stack is empty.");
+            
+            let state = file::current_state(conn, &file)?;
 
-        let reader_state = ReaderState::new(&file, &state);
-        Ok(reader_state)
+            let reader_state = ReaderState::new(&file, &state);
+            Ok(reader_state)
+        }
+
     }
 
     fn file(&self) -> Result<File> {

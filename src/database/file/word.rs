@@ -16,6 +16,16 @@ impl Word {
             tokens: Arc::new(Vec::new()),
         }
     }
+
+    pub fn new(tokens: &Vec<Token>) -> Self {
+        let text = tokens.iter().fold(String::new(), |text, token| text + &token.text);
+        let tokens = Arc::new(tokens.clone());
+
+        Word {
+            text,
+            tokens,
+        }
+    }
 }
 
 pub fn to_words(tokens: &Vec<Token>) -> Vec<Word> {
@@ -24,12 +34,7 @@ pub fn to_words(tokens: &Vec<Token>) -> Vec<Word> {
 
     for token in tokens.iter() {
         if !is_legal(token, &stored) {
-            let word = Word {
-                text: to_string(&stored),
-                tokens: Arc::new(stored.clone()),
-            };
-
-            words.push(word);
+            words.push(Word::new(&stored));
 
             stored.clear();
         }
@@ -37,12 +42,6 @@ pub fn to_words(tokens: &Vec<Token>) -> Vec<Word> {
     }
 
     words
-}
-
-pub fn to_string(tokens: &Vec<Token>) -> String {
-    tokens
-        .iter()
-        .fold(String::new(), |_, token| token.text.clone())
 }
 
 fn is_legal(token: &Token, stored: &[Token]) -> bool {

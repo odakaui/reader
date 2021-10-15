@@ -71,6 +71,7 @@ pub fn next_state(
 
     clear_redo_stack(conn, current_state.history_id)?;
 
+    update_state(conn, current_state)?;
     insert_state(conn, &next_state)
 }
 
@@ -219,6 +220,15 @@ fn clear_redo_stack(conn: &Connection, history_id: i32) -> Result<()> {
         r#"DELETE FROM state WHERE history_id=?1 AND operation_num>?2"#,
         params![history_id, operation_num],
     )?;
+
+    Ok(())
+}
+
+fn update_state(conn: &Connection, state: &State) -> Result<()> {
+    conn.execute(
+        r#"UPDATE state SET action=?1 WHERE id=?2"#,
+        params![state.action.as_ref().expect("action is not set").to_int(), state.id]
+        )?;
 
     Ok(())
 }

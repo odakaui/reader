@@ -30,7 +30,7 @@ impl ReaderState {
         let unread = unread(position, &words);
         let current = current(position, &words);
 
-        println!("{:?}", unread);
+        println!("{:?}", current);
 
         ReaderState {
             read,
@@ -62,17 +62,29 @@ impl ReaderState {
 fn read(position: &Position, words: &[Word]) -> Arc<Vec<Word>> {
     let index = position.index;
 
+    if words.is_empty() {
+        return Arc::new(vec![Word::empty()])
+    }
+
     Arc::new(words[..index].to_vec())
 }
 
 fn unread(position: &Position, words: &[Word]) -> Arc<Vec<Word>> {
     let index = position.index;
 
+    if words.is_empty() {
+        return Arc::new(vec![Word::empty()])
+    }
+
     Arc::new(words[index + 1..].to_vec())
 }
 
 fn current(position: &Position, words: &[Word]) -> Word {
     let index = position.index;
+
+    if words.is_empty() {
+        return Word::empty()
+    }
 
     words[index].clone()
 }

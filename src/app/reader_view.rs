@@ -18,7 +18,7 @@ pub fn build_reader_view() -> impl Widget<ApplicationState> {
         Label::new(|words: &Arc<Vec<Word>>, _env: &Env| {
             words
                 .iter()
-                .fold(String::new(), |text, word| text + &word::to_string(&word.tokens))
+                .fold(String::new(), |text, word| text + &word.text)
         })
         .with_font(secondary_font.clone())
         .with_text_color(BACKGROUND_TEXT_COLOR),
@@ -32,7 +32,7 @@ pub fn build_reader_view() -> impl Widget<ApplicationState> {
     let right_label = Label::new(|words: &Arc<Vec<Word>>, _env: &Env| {
             words
                 .iter()
-                .fold(String::new(), |text, word| text + &word::to_string(&word.tokens))
+                .fold(String::new(), |text, word| text + &word.text)
     })
         .with_font(secondary_font)
         .with_text_color(BACKGROUND_TEXT_COLOR)
