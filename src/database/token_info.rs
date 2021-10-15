@@ -1,8 +1,8 @@
 use super::{history_token, token};
 use super::{HistoryToken, Token};
 use anyhow::Result;
-use rusqlite::Connection;
 use druid::{Data, Lens};
+use rusqlite::Connection;
 
 #[derive(Clone, Debug, PartialEq, Data, Lens)]
 pub struct TokenInfo {
@@ -20,6 +20,21 @@ impl TokenInfo {
 
     pub fn to_token_info(conn: &Connection, history_id: i32) -> Result<Vec<TokenInfo>> {
         let history_tokens = history_token::select_history_tokens(conn, history_id)?;
+
+        Ok(history_tokens
+            .iter()
+            .map(|history_token| -> Result<TokenInfo> {
+                let id = history_token.token_id;
+                let token: Token = token::select_token(conn, id)?;
+
+                Ok(TokenInfo::new(token, history_token.clone()))
+            })
+            .flatten()
+            .collect())
+    }
+
+    pub fn all(conn: &Connection) -> Result<Vec<TokenInfo>> {
+        let history_tokens = history_token::select_all_history_tokens(conn)?;
 
         Ok(history_tokens
             .iter()

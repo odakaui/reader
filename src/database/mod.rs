@@ -13,7 +13,9 @@ pub use file::Word;
 pub use history_token::HistoryToken;
 pub use reader_state::{ReaderState, Status};
 pub use state::Operation;
-pub use statistics_state::{StatisticsState, TokenInfo};
+pub use statistics_state::StatisticsState;
+pub use token_info::TokenInfo;
+pub use token_state::{Filter, Sort, TokenState};
 
 mod common;
 mod database_error;
@@ -24,6 +26,8 @@ mod reader_state;
 mod state;
 mod statistics_state;
 mod token;
+mod token_info;
+mod token_state;
 mod tokenizer;
 
 pub struct Database {
@@ -202,6 +206,13 @@ impl Database {
         let file = get_file(&self.file)?;
 
         file::statistics(conn, &file)
+    }
+
+    pub fn tokens(&self) -> Result<TokenState> {
+        let conn = &self.conn;
+        let file = get_file(&self.file)?;
+
+        file::tokens(conn)
     }
 }
 

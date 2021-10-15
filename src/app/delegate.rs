@@ -1,4 +1,4 @@
-use super::{MARK_KNOWN, MARK_UNKNOWN, READER, REDO, STATISTICS, UNDO};
+use super::{MARK_KNOWN, MARK_UNKNOWN, READER, REDO, STATISTICS, TOKENS, UNDO};
 use crate::{ApplicationState, Operation, View};
 use anyhow::{anyhow, Result};
 use druid::{commands, AppDelegate, Command, DelegateCtx, Env, Handled, Target};
@@ -51,6 +51,12 @@ impl AppDelegate<ApplicationState> for Delegate {
             println!("Statistics");
 
             self.statistics(data).expect("[error] Statistics failed.");
+
+            return Handled::Yes;
+        } else if cmd.is(TOKENS) {
+            println!("Tokens");
+
+            self.tokens(data).expect("tokens failed.");
 
             return Handled::Yes;
         }
@@ -108,6 +114,15 @@ impl Delegate {
         data.statistics_state = database.statistics()?;
 
         data.current_view = View::Statistics;
+
+        Ok(())
+    }
+
+    fn tokens(&self, data: &mut ApplicationState) -> Result<()> {
+        let database = data.database.borrow_mut();
+        data.token_state = database.tokens()?;
+
+        data.current_view = View::Tokens;
 
         Ok(())
     }

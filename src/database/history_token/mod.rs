@@ -1,6 +1,6 @@
 use anyhow::Result;
-use rusqlite::{params, Connection};
 use druid::{Data, Lens};
+use rusqlite::{params, Connection};
 
 use super::token;
 use super::Token;
@@ -103,6 +103,25 @@ pub fn select_history_tokens(conn: &Connection, history_id: i32) -> Result<Vec<H
 
     let results = stmt
         .query_map(params![history_id], |row| {
+            Ok(HistoryToken {
+                history_id: row.get(0)?,
+                token_id: row.get(1)?,
+                total_seen: row.get(2)?,
+                total_unknown: row.get(3)?,
+            })
+        })?
+        .flatten()
+        .collect();
+
+    Ok(results)
+}
+
+pub fn select_all_history_tokens(conn: &Connection) -> Result<Vec<HistoryToken>> {
+    let mut stmt = conn
+        .prepare(r#"SELECT history_id, token_id, total_seen, total_unknown FROM history_tokens"#)?;
+
+    let results = stmt
+        .query_map([], |row| {
             Ok(HistoryToken {
                 history_id: row.get(0)?,
                 token_id: row.get(1)?,

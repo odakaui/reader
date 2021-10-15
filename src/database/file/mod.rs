@@ -1,11 +1,14 @@
 use super::{common, history, history_token, state};
-use super::{DatabaseError, Operation, Position, State, StatisticsState, TokenInfo, Token, Tokenizer, POS};
+use super::{
+    DatabaseError, Filter, Operation, Position, Sort, State, StatisticsState, Token, TokenInfo,
+    TokenState, Tokenizer, POS,
+};
 use anyhow::{anyhow, Context, Result};
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
-use std::{fs, path};
-use std::sync::Arc;
 use std::cmp::Reverse;
+use std::sync::Arc;
+use std::{fs, path};
 
 pub use line::Line;
 pub use word::Word;
@@ -195,7 +198,7 @@ pub fn statistics(conn: &Connection, file: &File) -> Result<StatisticsState> {
     let history = history::select_history(conn, history::current_history(conn, file.id)?)?;
     let mut unknown = TokenInfo::to_token_info(conn, history.id)?;
 
-    unknown.sort_by_key(|b| Reverse(b.total_unknown())); 
+    unknown.sort_by_key(|b| Reverse(b.total_unknown()));
 
     let mut total_seen = 0;
     let mut total_unknown = 0;
@@ -213,6 +216,11 @@ pub fn statistics(conn: &Connection, file: &File) -> Result<StatisticsState> {
         total_seen,
         total_unknown,
     })
+}
+
+pub fn tokens(conn: &Connection) -> Result<TokenState> {
+    let tokens = TokenInfo::all(conn)?;
+    Ok(TokenState::new(&tokens, &Sort::Total, &Filter::All))
 }
 
 fn save_file(source_file: &path::PathBuf, target_dir: &path::PathBuf, name: &str) -> Result<()> {

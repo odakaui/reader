@@ -19,6 +19,7 @@ mod eof_view;
 mod reader_view;
 mod right_aligned_label;
 mod statistics_view;
+mod token_view;
 
 const HORIZONTAL_WIDGET_SPACING: f64 = 64.0;
 const VERTICAL_WIDGET_SPACING: f64 = 36.0;
@@ -31,6 +32,7 @@ const UNDO: Selector<()> = Selector::new("UNDO");
 const REDO: Selector<()> = Selector::new("REDO");
 const READER: Selector<()> = Selector::new("READER");
 const STATISTICS: Selector<()> = Selector::new("STATISTICS");
+const TOKENS: Selector<()> = Selector::new("TOKENS");
 
 pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
     // create the open file dialogue
@@ -101,10 +103,17 @@ pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
                         )
                         .append(
                             MenuItem::new(
-                                LocalizedString::new("Reader"),
+                                LocalizedString::new("Statistics"),
                                 Command::new(STATISTICS, (), Target::Auto),
                             )
                             .hotkey(None, "s"),
+                        )
+                        .append(
+                            MenuItem::new(
+                                LocalizedString::new("Tokens"),
+                                Command::new(TOKENS, (), Target::Auto),
+                            )
+                            .hotkey(None, "t"),
                         ),
                 ),
         )
@@ -144,6 +153,7 @@ fn build_root_widget() -> impl Widget<ApplicationState> {
             View::Empty => Box::new(empty_view::build_empty_view()),
             View::Statistics => Box::new(statistics_view::build_statistics_view()),
             View::Eof => Box::new(eof_view::build_empty_view()),
+            View::Tokens => Box::new(token_view::build_token_view()),
         },
     );
 
