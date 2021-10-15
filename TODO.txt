@@ -37,3 +37,7 @@ Unknown
 
 
 Improve the formatting on the statistics screen.
+
+
+
+Add error handling and custom errors.
