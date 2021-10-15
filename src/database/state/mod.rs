@@ -1,18 +1,18 @@
-use rusqlite::{Connection, params};
 use anyhow::{anyhow, Result};
+use rusqlite::{params, Connection};
 
 pub use operation::Operation;
 
-pub mod operation;
 pub mod current_state;
+pub mod operation;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Position {
     pub index: usize,
     pub line: usize,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct State {
     pub id: i32,
     pub history_id: i32,
@@ -30,10 +30,10 @@ pub fn initialize(conn: &Connection) -> Result<()> {
             current_line INTEGER,
             operation_num INTEGER NOT NULL,
             action INTEGER,
-            CONSTRAINT uq_state UNIQUE(file_id, operation_num)
-            FOREIGN KEY (file_id) REFERENCES files(id)
+            CONSTRAINT uq_state UNIQUE(history_id, operation_num)
+            FOREIGN KEY (history_id) REFERENCES history (id)
         )"#,
-        []
+        [],
     )?;
 
     current_state::initialize(conn)?;
@@ -43,27 +43,35 @@ pub fn initialize(conn: &Connection) -> Result<()> {
 
 pub fn initial_state(conn: &Connection, history_id: i32) -> Result<State> {
     let initial_position = Position { line: 0, index: 0 };
-    let initial_state = State { id: 0, history_id, position: Some(initial_position), operation_num: 0, action: None };
+    let initial_state = State {
+        id: 0,
+        history_id,
+        position: Some(initial_position),
+        operation_num: 0,
+        action: None,
+    };
 
     let state = insert_state(conn, &initial_state)?;
 
     Ok(state)
 }
 
-pub fn next_state(conn: &Connection, current_state: &State, new_position: &Option<Position>) -> Result<State> {
-    let history_id = current_state.history_id;
-
+pub fn next_state(
+    conn: &Connection,
+    current_state: &State,
+    new_position: &Option<Position>,
+) -> Result<State> {
     let next_state = State {
         id: current_state.id,
         history_id: current_state.history_id,
-        position: new_position.to_owned(),
+        position: new_position.clone(),
         operation_num: current_state.operation_num + 1,
         action: None,
     };
 
-    clear_redo_stack(conn, current_state)?;
+    clear_redo_stack(conn, current_state.history_id)?;
 
-    Ok(insert_state(conn, &next_state)?)
+    insert_state(conn, &next_state)
 }
 
 pub fn current_state(conn: &Connection, history_id: i32) -> Result<i32> {
@@ -73,7 +81,7 @@ pub fn current_state(conn: &Connection, history_id: i32) -> Result<i32> {
 pub fn reset_state(conn: &Connection, history_id: i32) -> Result<()> {
     conn.execute(
         r#"DELETE FROM state WHERE history_id=?1"#,
-        params![history_id]
+        params![history_id],
     )?;
 
     current_state::delete_current_state(conn, history_id)?;
@@ -175,16 +183,15 @@ pub fn select_state(conn: &Connection, id: i32) -> Result<State> {
             })
         })?
     )
-
 }
 
 fn insert_state(conn: &Connection, state: &State) -> Result<State> {
-    let index = match state.position {
+    let index = match &state.position {
         None => None,
         Some(position) => Some(position.index),
     };
 
-    let line = match state.position {
+    let line = match &state.position {
         None => None,
         Some(position) => Some(position.line),
     };
@@ -192,24 +199,25 @@ fn insert_state(conn: &Connection, state: &State) -> Result<State> {
     conn.execute(
         r#"INSERT OR IGNORE INTO state (history_id, current_index, current_line, operation_num, action)
             VALUES (?1, ?2, ?3, ?4, ?5)"#,
-        params![state.history_id, index, line, state.operation_num, state.action.map(|action| action.to_int())]
+        params![state.history_id, index, line, state.operation_num, state.action.as_ref().map(|action| action.to_int())]
     )?;
 
     let id = conn.last_insert_rowid() as i32;
     let state = select_state(conn, id)?;
 
-    current_state::set_current_state(conn, id, state.id)?;
+    current_state::set_current_state(conn, state.history_id, id)?;
 
     Ok(state)
 }
 
-fn clear_redo_stack(conn: &Connection, state: &State) -> Result<()> {
+fn clear_redo_stack(conn: &Connection, history_id: i32) -> Result<()> {
+    let state = select_state(conn, current_state(conn, history_id)?)?;
     let operation_num = state.operation_num;
     let history_id = state.history_id;
 
     conn.execute(
         r#"DELETE FROM state WHERE history_id=?1 AND operation_num>?2"#,
-        params![history_id, operation_num]
+        params![history_id, operation_num],
     )?;
 
     Ok(())

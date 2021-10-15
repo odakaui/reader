@@ -1,6 +1,6 @@
+use super::Token;
 use anyhow::{Context, Result};
 use lindera;
-use super::Token;
 
 pub mod converter;
 
@@ -44,8 +44,8 @@ impl Tokenizer {
 mod tests {
     use anyhow::Result;
 
-    use super::{Token, Tokenizer};
     use super::super::POS::*;
+    use super::{Token, Tokenizer};
 
     #[test]
     fn test_convert_tokens() -> Result<()> {

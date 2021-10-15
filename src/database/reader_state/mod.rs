@@ -1,50 +1,82 @@
-use super::{State, Line, File, Token};
+use super::{File, Position, State, Word};
+use druid::{Data, Lens};
+use std::sync::Arc;
 
-pub use word::Word;
+#[derive(Clone, Debug, PartialEq, Data)]
+pub enum Status {
+    Empty,
+    Eof,
+    State
+}
 
-mod word;
-
+#[derive(Clone, Debug, Data, Lens)]
 pub struct ReaderState {
-    pub read: Vec<Word>,
-    pub unread: Vec<Word>,
+    pub read: Arc<Vec<Word>>,
+    pub unread: Arc<Vec<Word>>,
     pub current: Word,
+    pub status: Status,
 }
 
 impl ReaderState {
     pub fn new(file: &File, state: &State) -> Self {
-        let line = line(file, state); 
-        let words = word::to_words(&line);
+        if state.position.is_none() {
+            return Self::eof()
+        }
 
-        let read = read(state, &words);
-        let unread = unread(state, &words);
-        let current = current(state, &words);
+        let position = state.position.as_ref().unwrap();
+        let words = words(file, position);
+
+        let read = read(position, &words);
+        let unread = unread(position, &words);
+        let current = current(position, &words);
+
+        println!("{:?}", unread);
 
         ReaderState {
             read,
             unread,
             current,
+            status: Status::State,
+        }
+    }
+
+    pub fn empty() -> Self {
+         ReaderState {
+            read: Arc::new(Vec::new()),
+            unread: Arc::new(Vec::new()),
+            current: Word::empty(),
+            status: Status::Empty,
+        }
+    }
+
+    pub fn eof() -> Self {
+         ReaderState {
+            read: Arc::new(Vec::new()),
+            unread: Arc::new(Vec::new()),
+            current: Word::empty(),
+            status: Status::Eof,
         }
     }
 }
 
-fn read(state: &State, words: &Vec<Word>) -> Vec<Word> {
-    let index = state.current_index;
+fn read(position: &Position, words: &[Word]) -> Arc<Vec<Word>> {
+    let index = position.index;
 
-    words[..index].to_vec()
+    Arc::new(words[..index].to_vec())
 }
 
-fn unread(state: &State, words: &Vec<Word>) -> Vec<Word> {
-    let index = state.current_index;
+fn unread(position: &Position, words: &[Word]) -> Arc<Vec<Word>> {
+    let index = position.index;
 
-    words[index + 1..].to_vec()
+    Arc::new(words[index + 1..].to_vec())
 }
 
-fn current(state: &State, words: &Vec<Word>) -> Word {
-    let index = state.current_index;
+fn current(position: &Position, words: &[Word]) -> Word {
+    let index = position.index;
 
-    words[index]
+    words[index].clone()
 }
 
-fn line(file: &File, state: &State) -> Line {
-    file.lines[state.current_line]
+fn words(file: &File, position: &Position) -> Vec<Word> {
+    file.lines[position.line].words.to_vec()
 }

@@ -1,6 +1,7 @@
+use druid::Data;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Data, Deserialize, Serialize)]
 pub enum POS {
     EMPTY,
     PRON,
@@ -70,4 +71,3 @@ impl POS {
         }
     }
 }
-

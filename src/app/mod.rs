@@ -1,4 +1,4 @@
-use crate::{compressor, reader, ApplicationState, Article, Operation, ReaderState, State, View};
+use crate::{ApplicationState, Status, View};
 use anyhow::{anyhow, Result};
 use delegate::Delegate;
 use druid::widget::{
@@ -17,7 +17,7 @@ mod delegate;
 mod empty_view;
 mod reader_view;
 mod right_aligned_label;
-mod statistics_view;
+mod eof_view;
 
 const HORIZONTAL_WIDGET_SPACING: f64 = 64.0;
 const VERTICAL_WIDGET_SPACING: f64 = 36.0;
@@ -128,9 +128,12 @@ fn build_root_widget() -> impl Widget<ApplicationState> {
         |data: &ApplicationState, _: &Env| -> View {
             let mut current_view = data.current_view.clone();
 
-            // display empty_view if reader_state is None
-            if data.reader_state.is_none() && current_view == View::Reader {
-                current_view = View::Empty;
+            if current_view == View::Reader {
+                match data.reader_state.status {
+                    Status::Empty => current_view = View::Empty,
+                    Status::Eof => current_view = View::Eof,
+                    Status::State => {},
+                }
             }
 
             current_view
@@ -138,7 +141,8 @@ fn build_root_widget() -> impl Widget<ApplicationState> {
         |current_view: &View, _: &ApplicationState, _: &Env| match current_view {
             View::Reader => Box::new(reader_view::build_reader_view()),
             View::Empty => Box::new(empty_view::build_empty_view()),
-            View::Statistics => Box::new(statistics_view::build_statistics_view()),
+            View::Statistics => Box::new(empty_view::build_empty_view()),
+            View::Eof => Box::new(eof_view::build_empty_view()),
         },
     );
 

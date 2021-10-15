@@ -1,10 +1,21 @@
 use super::{Token, POS::*};
+use druid::{Data, Lens};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Data, Deserialize, Lens, Serialize)]
 pub struct Word {
     pub text: String,
-    pub tokens: Vec<Token>,
+    pub tokens: Arc<Vec<Token>>,
+}
+
+impl Word {
+    pub fn empty() -> Self {
+        Word {
+            text: "".to_string(),
+            tokens: Arc::new(Vec::new()),
+        }
+    }
 }
 
 pub fn to_words(tokens: &Vec<Token>) -> Vec<Word> {
@@ -15,7 +26,7 @@ pub fn to_words(tokens: &Vec<Token>) -> Vec<Word> {
         if !is_legal(token, &stored) {
             let word = Word {
                 text: to_string(&stored),
-                tokens: stored.clone(),
+                tokens: Arc::new(stored.clone()),
             };
 
             words.push(word);
@@ -28,8 +39,10 @@ pub fn to_words(tokens: &Vec<Token>) -> Vec<Word> {
     words
 }
 
-fn to_string(tokens: &Vec<Token>) -> String {
-    tokens.iter().fold(String::new(), |mut text, token| token.text)
+pub fn to_string(tokens: &Vec<Token>) -> String {
+    tokens
+        .iter()
+        .fold(String::new(), |_, token| token.text.clone())
 }
 
 fn is_legal(token: &Token, stored: &[Token]) -> bool {
@@ -130,4 +143,3 @@ fn contains_filler(tokens: &[Token]) -> bool {
 fn is_filler(token: &Token) -> bool {
     !(is_term(token) || is_punctuation(token) || is_unknown(token))
 }
-

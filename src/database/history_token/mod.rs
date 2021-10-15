@@ -1,5 +1,5 @@
-use rusqlite::{Connection, params};
 use anyhow::Result;
+use rusqlite::{params, Connection};
 
 use super::token;
 use super::Token;
@@ -16,13 +16,13 @@ pub fn initialize(conn: &Connection) -> Result<()> {
         r#"CREATE TABLE IF NOT EXISTS history_tokens (
             history_id INTEGER NOT NULL,
             token_id INTEGER NOT NULL,
-            total_seen INTEGER NOT NULL DEFULT 0,
+            total_seen INTEGER NOT NULL DEFAULT 0,
             total_unknown INTEGER NOT NULL DEFAULT 0,
             PRIMARY KEY (history_id, token_id),
             FOREIGN KEY (history_id) REFERENCES history (id),
             FOREIGN KEY (token_id) REFERENCES token (id)
         )"#,
-        []
+        [],
     )?;
 
     token::initialize(conn)?;
@@ -30,11 +30,22 @@ pub fn initialize(conn: &Connection) -> Result<()> {
     Ok(())
 }
 
-pub fn insert_history_tokens(conn: &Connection, history_id: i32, tokens: &Vec<Token>, unknown: bool) -> Result<()> {
+pub fn insert_history_tokens(
+    conn: &Connection,
+    history_id: i32,
+    tokens: &Vec<Token>,
+    unknown: bool,
+) -> Result<()> {
     let unknown = if unknown { 1 } else { 0 };
 
     for token in tokens.iter() {
-        let token_id = token::select_token_id(conn, &token.lemma)?;
+        let token_id = match token::select_token_id(conn, &token.lemma) {
+            Ok(id) => id,
+            Err(_) => {
+                token::insert_token(conn, token)?;
+                token::select_token_id(conn, &token.lemma)?
+            }
+        };
 
         conn.execute(
             r#"INSERT INTO history_tokens (history_id, token_id, total_seen, total_unknown)
@@ -47,7 +58,12 @@ pub fn insert_history_tokens(conn: &Connection, history_id: i32, tokens: &Vec<To
     Ok(())
 }
 
-pub fn delete_history_tokens(conn: &Connection, history_id: i32, tokens: &Vec<Token>, unknown: bool) -> Result<()> {
+pub fn delete_history_tokens(
+    conn: &Connection,
+    history_id: i32,
+    tokens: &Vec<Token>,
+    unknown: bool,
+) -> Result<()> {
     let unknown = if unknown { 1 } else { 0 };
 
     for token in tokens.iter() {
@@ -61,8 +77,8 @@ pub fn delete_history_tokens(conn: &Connection, history_id: i32, tokens: &Vec<To
         if total_seen < 1 || total_unknown < 1 {
             conn.execute(
                 r#"DELETE FROM history_tokens WHERE history_id=?1 AND token_id=?2"#,
-                params![history_id, token_id]
-                )?;
+                params![history_id, token_id],
+            )?;
         } else {
             conn.execute(
                 r#"UPDATE history_tokens SET total_seen=?1, total_unknown=?2 WHERE history_id=?3 AND token_id=?4"#,

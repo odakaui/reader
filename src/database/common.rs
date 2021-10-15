@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use std::{path, fs};
+use std::{fs, path};
 
 pub fn file_name(path: &path::PathBuf) -> Result<String> {
     Ok(path

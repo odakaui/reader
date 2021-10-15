@@ -1,7 +1,11 @@
+use std::sync::Arc;
+
 use super::{RightAlignedLabel, BACKGROUND_TEXT_COLOR, HORIZONTAL_WIDGET_SPACING};
-use crate::{reader, ApplicationState, ReaderState};
+use crate::word;
+use crate::Word;
+use crate::{ApplicationState, ReaderState};
 use druid::widget::{Align, Flex, Label};
-use druid::{Env, FontDescriptor, FontFamily, Widget, WidgetExt};
+use druid::{Env, FontDescriptor, FontFamily, LensExt, Widget, WidgetExt};
 
 pub fn build_reader_view() -> impl Widget<ApplicationState> {
     // set up the fonts - requires that Noto Sans CJK JP is installed
@@ -11,20 +15,28 @@ pub fn build_reader_view() -> impl Widget<ApplicationState> {
 
     // create the labels
     let left_label = RightAlignedLabel::new(
-        Label::new(|data: &Option<ReaderState>, _env: &Env| reader::start(data))
-            .with_font(secondary_font.clone())
-            .with_text_color(BACKGROUND_TEXT_COLOR),
+        Label::new(|words: &Arc<Vec<Word>>, _env: &Env| {
+            words
+                .iter()
+                .fold(String::new(), |text, word| text + &word::to_string(&word.tokens))
+        })
+        .with_font(secondary_font.clone())
+        .with_text_color(BACKGROUND_TEXT_COLOR),
     )
-    .lens(ApplicationState::reader_state);
+    .lens(ApplicationState::reader_state.then(ReaderState::read));
 
-    let center_label = Label::new(|data: &Option<ReaderState>, _env: &Env| reader::middle(data))
+    let center_label = Label::new(|word: &Word, _env: &Env| word.text.clone() )
         .with_font(primary_font)
-        .lens(ApplicationState::reader_state);
+        .lens(ApplicationState::reader_state.then(ReaderState::current));
 
-    let right_label = Label::new(|data: &Option<ReaderState>, _env: &Env| reader::end(data))
+    let right_label = Label::new(|words: &Arc<Vec<Word>>, _env: &Env| {
+            words
+                .iter()
+                .fold(String::new(), |text, word| text + &word::to_string(&word.tokens))
+    })
         .with_font(secondary_font)
         .with_text_color(BACKGROUND_TEXT_COLOR)
-        .lens(ApplicationState::reader_state);
+        .lens(ApplicationState::reader_state.then(ReaderState::unread));
 
     let layout = Flex::row()
         .must_fill_main_axis(true)

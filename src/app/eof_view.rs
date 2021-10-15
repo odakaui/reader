@@ -8,7 +8,7 @@ pub fn build_empty_view() -> impl Widget<ApplicationState> {
     let noto_cjk = FontFamily::new_unchecked("Noto Sans CJK JP");
     let primary_font = FontDescriptor::new(noto_cjk.clone()).with_size(64.0);
 
-    let label = Label::new("To import a new file press Ctrl + O").with_font(primary_font);
+    let label = Label::new("EOF").with_font(primary_font);
 
     let layout = Flex::row()
         .must_fill_main_axis(true)

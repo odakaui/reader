@@ -1,24 +1,25 @@
-use std::path::PathBuf;
 use anyhow::{anyhow, Result};
 use rusqlite::Connection;
+use std::path::{Path, PathBuf};
 
-use file::{File, Line};
-use tokenizer::Tokenizer;
-use state::{Position, State, Operation};
+use file::File;
+use state::{Position, State};
 use token::{Token, POS};
+use tokenizer::Tokenizer;
 
-pub use reader_state::ReaderState;
+pub use file::word;
+pub use file::Word;
+pub use reader_state::{Status, ReaderState};
+pub use state::Operation;
 
+mod common;
 mod file;
 mod history;
-mod state;
+mod history_token;
 mod reader_state;
+mod state;
 mod token;
 mod tokenizer;
-mod common;
-mod history_token;
-
-
 
 pub struct Database {
     files_dir: PathBuf,
@@ -27,7 +28,7 @@ pub struct Database {
 }
 
 impl Database {
-    pub fn new(path: &PathBuf) -> Result<Self> {
+    pub fn new(path: &Path) -> Result<Self> {
         let files_dir = path.join("files");
         common::create_dir(&files_dir)?;
 
@@ -36,20 +37,22 @@ impl Database {
 
         file::initialize(&conn, &files_dir)?;
 
+        let file = file::current_file(&conn, &files_dir).ok();
+
         let database = Database {
             files_dir,
             conn,
-            file: None,
+            file,
         };
 
         Ok(database)
     }
-    
-    pub fn import(&mut self, source_file: &PathBuf) -> Result<ReaderState> {
+
+    pub fn import(&mut self, source_file: &Path) -> Result<ReaderState> {
         let target_dir = &self.files_dir;
         let conn = &self.conn;
 
-        let file = file::insert_file(conn, source_file, target_dir)?;
+        let file = file::insert_file(conn, &source_file.to_path_buf(), target_dir)?;
         let state = file::current_state(conn, &file)?;
 
         let reader_state = ReaderState::new(&file, &state);
@@ -60,7 +63,7 @@ impl Database {
     }
 
     pub fn open(&mut self, id: i32) -> Result<ReaderState> {
-        let target_dir = &self.files_dir; 
+        let target_dir = &self.files_dir;
         let conn = &self.conn;
 
         let file = file::select_file(conn, target_dir, id)?;
@@ -74,19 +77,25 @@ impl Database {
     }
 
     pub fn reset(&self) -> Result<ReaderState> {
-        let conn = self.conn;
+        if self.file.is_none() {
+            return Ok(ReaderState::empty())    
+        }
+
+        let conn = &self.conn;
         let file = self.file()?;
 
-        let state = file::reset(&conn, &file)?;
+        let state = file::reset(conn, &file)?;
 
         let reader_state = ReaderState::new(&file, &state);
 
         Ok(reader_state)
-
     }
 
     pub fn current(&mut self) -> Result<ReaderState> {
-        let target_dir = &self.files_dir; 
+        if self.file.is_none() {
+            return Ok(ReaderState::empty())    
+        }
+
         let conn = &self.conn;
         let file = self.file()?;
 
@@ -94,52 +103,55 @@ impl Database {
 
         let reader_state = ReaderState::new(&file, &state);
         Ok(reader_state)
-
     }
 
     pub fn next(&self, action: &Operation) -> Result<ReaderState> {
-        let conn = self.conn;
+        if self.file.is_none() {
+            return Ok(ReaderState::empty())    
+        }
+
+        let conn = &self.conn;
         let file = self.file()?;
 
-        let state = file::next(&conn, &file, action)?;
+        let state = file::next(conn, &file, action)?;
 
         let reader_state = ReaderState::new(&file, &state);
         Ok(reader_state)
     }
 
     pub fn undo(&self) -> Result<ReaderState> {
-        let conn = self.conn;
+        if self.file.is_none() {
+            return Ok(ReaderState::empty())    
+        }
+
+        let conn = &self.conn;
         let file = self.file()?;
 
-        let state = file::undo(&conn, &file)?;
+        let state = file::undo(conn, &file)?;
 
         let reader_state = ReaderState::new(&file, &state);
         Ok(reader_state)
     }
 
     pub fn redo(&self) -> Result<ReaderState> {
-        let conn = self.conn;
+        if self.file.is_none() {
+            return Ok(ReaderState::empty())    
+        }
+
+        let conn = &self.conn;
         let file = self.file()?;
 
-        let state = file::redo(&conn, &file)?;
+        let state = file::redo(conn, &file)?;
 
         let reader_state = ReaderState::new(&file, &state);
         Ok(reader_state)
-
     }
 
     fn file(&self) -> Result<File> {
-        let conn = self.conn;
-        let target_dir = &self.files_dir; 
-
-        if self.file.is_none() {
-            self.file = Some(file::current_file(&conn, target_dir)?);
-        }
-
-        Ok(self.file.ok_or(anyhow!("There is no currently open file."))?)
-
+        Ok(self
+            .file.as_ref()
+            .ok_or_else(|| anyhow!("There is no currently open file."))?.clone())
     }
-
 
     // pub fn undo(&self, state: &State) -> Result<State> {
     //     unimplemented!()
@@ -168,5 +180,4 @@ impl Database {
     // pub fn toggle_learned(&self, token: &Token) -> Result<bool> {
     //     unimplemented!()
     // }
-
 }

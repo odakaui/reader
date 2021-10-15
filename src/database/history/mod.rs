@@ -1,4 +1,4 @@
-use super::{state, history_token};
+use super::{history_token, state};
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use rusqlite::{params, Connection};
@@ -19,14 +19,15 @@ pub fn initialize(conn: &Connection) -> Result<()> {
             file_id INTEGER NOT NULL,
             start_date TEXT NOT NULL,
             end_date TEXT,
+            FOREIGN KEY (file_id) REFERENCES files (id)
         )"#,
-        []
+        [],
     )?;
 
     current_history::initialize(conn)?;
     state::initialize(conn)?;
     history_token::initialize(conn)?;
-    
+
     Ok(())
 }
 
@@ -37,14 +38,14 @@ pub fn current_history(conn: &Connection, file_id: i32) -> Result<i32> {
 pub fn reset_history(conn: &Connection, file_id: i32, id: i32) -> Result<()> {
     state::reset_state(conn, id)?;
 
-    insert_history(conn, file_id)?; 
+    insert_history(conn, file_id)?;
 
     Ok(())
 }
 
 pub fn insert_history(conn: &Connection, file_id: i32) -> Result<History> {
     conn.execute(
-        r#"INSERT OR IGNORE INTO history (file_id, start_date, current_operation) VALUES (?1, ?2, 0)"#,
+        r#"INSERT OR IGNORE INTO history (file_id, start_date) VALUES (?1, ?2)"#,
         params![file_id, Utc::now()],
     )?;
 
@@ -68,48 +69,6 @@ fn select_history(conn: &Connection, id: i32) -> Result<History> {
                 start_date: row.get(2)?,
                 end_date: row.get(3)?,
             })
-        })?)
+        },
+    )?)
 }
-
-// pub fn update_history_with_current_operation(
-//     conn: &Connection,
-//     history_id: i32,
-//     current_operation: i32,
-// ) -> Result<()> {
-//     conn.execute(
-//         r#"UPDATE history SET current_operation=?1 WHERE history_id=?2"#,
-//         params![current_operation, history_id],
-//     )?;
-
-//     Ok(())
-// }
-
-// pub fn select_history_for_id(conn: &Connection, history_id: i32) -> Result<History> {
-//     Ok(conn.query_row(
-//         r#"SELECT id, file_id, start_date, end_date, current_operation FROM history WHERE id=?1 ORDER BY id DESC"#,
-//         params![history_id],
-//         |row| {
-//             Ok(History {
-//                 id: row.get(0)?,
-//                 file_id: row.get(1)?,
-//                 start_date: row.get(2)?,
-//                 end_date: row.get(3)?,
-//                 current_operation: row.get(4)?,
-//             })
-//         })?)
-// }
-
-// pub fn select_current_history(conn: &Connection, file_id: i32) -> Result<History> {
-//     Ok(conn.query_row(
-//         r#"SELECT id, file_id, start_date, end_date FROM history WHERE file_id=?1 ORDER BY id DESC"#,
-//         params![file_id],
-//         |row| {
-//             Ok(History {
-//                 id: row.get(0)?,
-//                 file_id: row.get(1)?,
-//                 start_date: row.get(2)?,
-//                 end_date: row.get(3)?,
-//                 current_operation: row.get(4)?,
-//             })
-//         })?)
-// }
