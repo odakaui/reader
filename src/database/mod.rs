@@ -54,14 +54,24 @@ impl Database {
         let target_dir = &self.files_dir;
         let conn = &self.conn;
 
-        let file = file::insert_file(conn, &source_file.to_path_buf(), target_dir)?;
-        let state = file::current_state(conn, &file)?;
+        match file::insert_file(conn, &source_file.to_path_buf(), target_dir) {
+            Ok(file) => {
+                self.file = Some(file.clone());
 
-        let reader_state = ReaderState::new(&file, &state);
+                let state =  file::current_state(conn, &file)?;
 
-        self.file = Some(file);
+                Ok(ReaderState::new(&file, &state))
+            },
+            Err(e) => {
+                if is_error(&e, &DatabaseError::FileExists) {
+                    println!("{}", e);
 
-        Ok(reader_state)
+                    Ok(get_current(conn, &get_file(&self.file)?)?)
+                } else {
+                    Err(e)
+                }
+            }
+        }
     }
 
     pub fn open(&mut self, id: i32) -> Result<ReaderState> {
@@ -122,7 +132,7 @@ impl Database {
             }
             Err(e) => {
                 if is_error(&e, &DatabaseError::Eof) {
-                    println!("eof");
+                    println!("{}", e);
 
                     Ok(get_current(conn, &file)?)
                 } else {
@@ -148,7 +158,7 @@ impl Database {
             }
             Err(e) => {
                 if is_error(&e, &DatabaseError::UndoEmpty) {
-                    println!("undo stack is empty.");
+                    println!("{}", e);
 
                     Ok(get_current(conn, &file)?)
                 } else {
@@ -174,7 +184,7 @@ impl Database {
             }
             Err(e) => {
                 if is_error(&e, &DatabaseError::RedoEmpty) {
-                    println!("redo stack is empty.");
+                    println!("{}", e);
 
                     Ok(get_current(conn, &file)?)
                 } else {
