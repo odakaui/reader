@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum POS {
     EMPTY,
     PRON,
@@ -70,9 +71,3 @@ impl POS {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Token {
-    pub lemma: String,
-    pub text: String,
-    pub pos: POS,
-}
