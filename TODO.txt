@@ -40,13 +40,16 @@ Improve the formatting on the statistics screen.
 
 
 
+[IMPORTANT] Use Selectors and Commands for all view commands to clean up code.
+
 Fix layout of token view with few tokens.
 Make tokens save whenever a checkbox is checked or unchecked.
 Save filter and sort for token view in the database.
 Remove expect statements in token_view.
-Use Selectors and Commands for all view commands to clean up code.
 Refactor token_view and related database methods.
 
 Rename token_view to tokens_view
+
+Fix layout on files view.
 
 

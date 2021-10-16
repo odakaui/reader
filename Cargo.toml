@@ -1,5 +1,5 @@
 [package]
-name = "reader_rs"
+name = "reader"
 version = "0.1.0"
 authors = ["Odaka Ui <31593320+odakaui@users.noreply.github.com>"]
 edition = "2018"
@@ -10,6 +10,7 @@ edition = "2018"
 anyhow = "^1"
 chrono = "^0.4"
 druid = "^0.7"
+dirs = "^4"
 env_logger ="^0.9"
 lindera = "^0.8"
 ron = "*"
