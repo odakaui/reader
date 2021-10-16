@@ -1,7 +1,9 @@
-use super::{OPEN, MARK_KNOWN, MARK_UNKNOWN, FILES, READER, REDO, STATISTICS, TOKENS, UNDO};
-use crate::{ApplicationState, Operation, View, Filter};
+use super::{COPY, FILES, MARK_KNOWN, MARK_UNKNOWN, OPEN, READER, REDO, STATISTICS, TOKENS, UNDO};
+use crate::{ApplicationState, Filter, Operation, View};
 use anyhow::{anyhow, Result};
-use druid::{commands, AppDelegate, Command, DelegateCtx, Env, Handled, Target};
+use druid::{
+    commands, AppDelegate, Application, Clipboard, Command, DelegateCtx, Env, Handled, Target,
+};
 use std::{fs, io::BufReader, io::Read, path::Path};
 
 pub struct Delegate;
@@ -68,9 +70,15 @@ impl AppDelegate<ApplicationState> for Delegate {
         } else if cmd.is(OPEN) {
             println!("Open");
 
-            self.open(data, *cmd.get(OPEN).unwrap()).expect("open failed.");
+            self.open(data, *cmd.get(OPEN).unwrap())
+                .expect("open failed.");
 
             return Handled::Yes;
+        } else if cmd.is(COPY) {
+            println!("Copy");
+
+            let mut clipboard = Application::global().clipboard();
+            clipboard.put_string(cmd.get(COPY).unwrap());
         }
 
         if let Some(file_info) = cmd.get(commands::OPEN_FILE) {

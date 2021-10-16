@@ -1,7 +1,10 @@
 use super::{OPEN, VERTICAL_WIDGET_SPACING};
-use crate::{File, ApplicationState, Filter, Sort, Token, TokenInfo, TokenState, FileState};
+use crate::{ApplicationState, File, FileState, Filter, Sort, Token, TokenInfo, TokenState};
 use druid::widget::{Button, Checkbox, Controller, Flex, Label, List, Scroll};
-use druid::{Env, EventCtx, FontDescriptor, FontFamily, Insets, Command, Target, LensExt, UpdateCtx, Widget, WidgetExt};
+use druid::{
+    Command, Env, EventCtx, FontDescriptor, FontFamily, Insets, LensExt, Target, UpdateCtx, Widget,
+    WidgetExt,
+};
 use std::cmp::Reverse;
 use std::sync::Arc;
 
@@ -19,8 +22,8 @@ pub fn build_files_view() -> impl Widget<ApplicationState> {
         .expand_width();
 
     fn create_row(font: FontDescriptor) -> impl Widget<File> {
-        let name_label = Label::new(|file: &File, _env: &Env| file.name.to_string())
-            .with_font(font.clone());
+        let name_label =
+            Label::new(|file: &File, _env: &Env| file.name.to_string()).with_font(font.clone());
 
         Flex::row()
             .with_child(name_label)
@@ -79,15 +82,19 @@ fn filter_info(info: Vec<TokenInfo>, filter: &Filter) -> Arc<Vec<TokenInfo>> {
     let mut info = info;
 
     match *filter {
-        Filter::All => {
-            Arc::new(info.to_vec())
-        },
-        Filter::Learned => {
-            Arc::new(info.into_iter().filter(|info| info.token.learned == true).collect::<Vec<TokenInfo>>().to_vec())
-        },
-        Filter::Unlearned => {
-            Arc::new(info.into_iter().filter(|info| info.token.learned != true).collect::<Vec<TokenInfo>>().to_vec())
-        }
+        Filter::All => Arc::new(info.to_vec()),
+        Filter::Learned => Arc::new(
+            info.into_iter()
+                .filter(|info| info.token.learned == true)
+                .collect::<Vec<TokenInfo>>()
+                .to_vec(),
+        ),
+        Filter::Unlearned => Arc::new(
+            info.into_iter()
+                .filter(|info| info.token.learned != true)
+                .collect::<Vec<TokenInfo>>()
+                .to_vec(),
+        ),
     }
 }
 

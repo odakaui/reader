@@ -52,4 +52,3 @@ Rename token_view to tokens_view
 
 Fix layout on files view.
 
-

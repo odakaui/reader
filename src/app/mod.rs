@@ -16,11 +16,11 @@ use std::boxed::Box;
 mod delegate;
 mod empty_view;
 mod eof_view;
+mod files_view;
 mod reader_view;
 mod right_aligned_label;
 mod statistics_view;
 mod token_view;
-mod files_view;
 
 const HORIZONTAL_WIDGET_SPACING: f64 = 64.0;
 const VERTICAL_WIDGET_SPACING: f64 = 36.0;
@@ -36,6 +36,7 @@ const STATISTICS: Selector<()> = Selector::new("STATISTICS");
 const TOKENS: Selector<()> = Selector::new("TOKENS");
 const OPEN: Selector<i32> = Selector::new("OPEN");
 const FILES: Selector<()> = Selector::new("FILES");
+const COPY: Selector<String> = Selector::new("COPY");
 
 pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
     // create the open file dialogue

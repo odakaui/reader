@@ -1,10 +1,10 @@
+use super::File;
 use druid::{Data, Lens};
 use std::sync::Arc;
-use super::File;
 
 #[derive(Clone, Debug, PartialEq, Data, Lens)]
 pub struct FileState {
-    pub files: Arc<Vec<File>>
+    pub files: Arc<Vec<File>>,
 }
 
 impl FileState {

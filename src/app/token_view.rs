@@ -1,7 +1,10 @@
-use super::VERTICAL_WIDGET_SPACING;
+use super::{COPY, VERTICAL_WIDGET_SPACING};
 use crate::{ApplicationState, Filter, Sort, Token, TokenInfo, TokenState};
 use druid::widget::{Button, Checkbox, Controller, Flex, Label, List, Scroll};
-use druid::{Env, EventCtx, FontDescriptor, FontFamily, Insets, LensExt, UpdateCtx, Widget, WidgetExt};
+use druid::{
+    Command, Env, EventCtx, FontDescriptor, FontFamily, Insets, LensExt, Target, UpdateCtx, Widget,
+    WidgetExt,
+};
 use std::cmp::Reverse;
 use std::sync::Arc;
 
@@ -68,22 +71,24 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
         let filter = &data.token_state.filter;
 
         match filter {
-        Filter::All => "All".to_string(),
-        Filter::Learned => "Learned".to_string(),
-        Filter::Unlearned => "Unlearned".to_string(),
-    }}
-    )
+            Filter::All => "All".to_string(),
+            Filter::Learned => "Learned".to_string(),
+            Filter::Unlearned => "Unlearned".to_string(),
+        }
+    })
     .with_font(data_font.clone());
 
-    let filter_button =
-        Button::from_label(filter_label).on_click(|_ctx: &mut EventCtx, data: &mut ApplicationState, _env: &Env| {
+    let filter_button = Button::from_label(filter_label).on_click(
+        |_ctx: &mut EventCtx, data: &mut ApplicationState, _env: &Env| {
             let database = data.database.borrow_mut();
 
-            let filter =  filter_type(&data.token_state.filter);
+            let filter = filter_type(&data.token_state.filter);
             data.token_state = database.tokens(&filter).expect("failed to load tokens");
 
-            data.token_state.tokens = filter_info(data.token_state.tokens.to_vec(), &data.token_state.filter);
-        });
+            data.token_state.tokens =
+                filter_info(data.token_state.tokens.to_vec(), &data.token_state.filter);
+        },
+    );
 
     let header = Flex::row()
         .with_child(header_label)
@@ -129,11 +134,19 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
 
         let percent_label =
             Label::new(|info: &TokenInfo, _env: &Env| info.percent_known().to_string())
-                .with_font(font)
+                .with_font(font.clone())
                 .with_line_break_mode(druid::widget::LineBreaking::Clip)
                 .fix_width(100.);
 
         let learned_switch = Checkbox::new("Learned").lens(TokenInfo::token.then(Token::learned));
+
+        let copy_label = Label::new("Copy").with_font(font.clone());
+
+        let copy_button = Button::from_label(copy_label).on_click(
+            |ctx: &mut EventCtx, info: &mut TokenInfo, _env| {
+                ctx.submit_command(Command::new(COPY, info.lemma(), Target::Auto));
+            },
+        );
 
         Flex::row()
             .with_child(lemma_label)
@@ -142,6 +155,7 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
             .with_child(unknown_label)
             .with_child(percent_label)
             .with_child(learned_switch)
+            .with_child(copy_button)
     }
 
     let list = Scroll::new(List::new(move || create_row(data_font.clone())))
@@ -193,15 +207,19 @@ fn filter_info(info: Vec<TokenInfo>, filter: &Filter) -> Arc<Vec<TokenInfo>> {
     let mut info = info;
 
     match *filter {
-        Filter::All => {
-            Arc::new(info.to_vec())
-        },
-        Filter::Learned => {
-            Arc::new(info.into_iter().filter(|info| info.token.learned == true).collect::<Vec<TokenInfo>>().to_vec())
-        },
-        Filter::Unlearned => {
-            Arc::new(info.into_iter().filter(|info| info.token.learned != true).collect::<Vec<TokenInfo>>().to_vec())
-        }
+        Filter::All => Arc::new(info.to_vec()),
+        Filter::Learned => Arc::new(
+            info.into_iter()
+                .filter(|info| info.token.learned == true)
+                .collect::<Vec<TokenInfo>>()
+                .to_vec(),
+        ),
+        Filter::Unlearned => Arc::new(
+            info.into_iter()
+                .filter(|info| info.token.learned != true)
+                .collect::<Vec<TokenInfo>>()
+                .to_vec(),
+        ),
     }
 }
 

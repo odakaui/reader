@@ -1,7 +1,7 @@
 use druid::{Data, Lens};
 use std::{cell::RefCell, rc::Rc};
 
-use super::{FileState, Database, ReaderState, StatisticsState, TokenState};
+use super::{Database, FileState, ReaderState, StatisticsState, TokenState};
 
 #[derive(Clone, Debug, Data, PartialEq)]
 pub enum View {

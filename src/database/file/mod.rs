@@ -1,15 +1,15 @@
 use super::{common, history, history_token, state};
 use super::{
-    DatabaseError, Filter, Operation, Position, Sort, State, StatisticsState, Token, TokenInfo,
-    TokenState, Tokenizer, POS, FileState
+    DatabaseError, FileState, Filter, Operation, Position, Sort, State, StatisticsState, Token,
+    TokenInfo, TokenState, Tokenizer, POS,
 };
 use anyhow::{anyhow, Context, Result};
+use druid::{Data, Lens};
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::cmp::Reverse;
 use std::sync::Arc;
 use std::{fs, path};
-use druid::{Data, Lens};
 
 pub use line::Line;
 pub use word::Word;
@@ -225,25 +225,24 @@ pub fn tokens(conn: &Connection, filter: &Filter) -> Result<TokenState> {
 }
 
 pub fn files(conn: &Connection) -> Result<FileState> {
-    let files = select_files(conn)?; 
+    let files = select_files(conn)?;
 
     Ok(FileState::new(&files))
 }
 
 fn select_files(conn: &Connection) -> Result<Vec<File>> {
-    let mut stmt = conn.prepare(
-        r#"SELECT id, name FROM files"#
-        )?;
+    let mut stmt = conn.prepare(r#"SELECT id, name FROM files"#)?;
 
-    let results = stmt.query_map(
-        [],
-        |row| {
+    let results = stmt
+        .query_map([], |row| {
             Ok(File {
                 id: row.get(0)?,
                 name: row.get(1)?,
                 lines: Arc::new(Vec::new()),
             })
-        })?.flatten().collect();
+        })?
+        .flatten()
+        .collect();
 
     Ok(results)
 }

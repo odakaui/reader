@@ -5,10 +5,11 @@ use std::path::{Path, PathBuf};
 use state::{Position, State};
 use tokenizer::Tokenizer;
 
-pub use file::File;
 pub use database_error::DatabaseError;
 pub use file::word;
+pub use file::File;
 pub use file::Word;
+pub use file_state::FileState;
 pub use history_token::HistoryToken;
 pub use reader_state::{ReaderState, Status};
 pub use state::Operation;
@@ -16,11 +17,11 @@ pub use statistics_state::StatisticsState;
 pub use token::{Token, POS};
 pub use token_info::TokenInfo;
 pub use token_state::{Filter, Sort, TokenState};
-pub use file_state::FileState;
 
 mod common;
 mod database_error;
 mod file;
+mod file_state;
 mod history;
 mod history_token;
 mod reader_state;
@@ -30,7 +31,6 @@ mod token;
 mod token_info;
 mod token_state;
 mod tokenizer;
-mod file_state;
 
 pub struct Database {
     files_dir: PathBuf,

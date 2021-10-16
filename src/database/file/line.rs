@@ -1,7 +1,7 @@
 use super::word;
 use super::{Deserialize, Result, Serialize, Tokenizer, Word, POS};
-use std::sync::Arc;
 use druid::{Data, Lens};
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq, Data, Lens, Deserialize, Serialize)]
 pub struct Line {

@@ -6,8 +6,8 @@ use std::rc::Rc;
 use app::launch_app;
 use database::word;
 use database::{
-    Database, File, Filter, Operation, ReaderState, Sort, StatisticsState, Status, Token, TokenInfo,
-    TokenState, Word, FileState
+    Database, File, FileState, Filter, Operation, ReaderState, Sort, StatisticsState, Status,
+    Token, TokenInfo, TokenState, Word,
 };
 
 pub use application_state::{ApplicationState, View};
@@ -25,7 +25,9 @@ fn share_dir() -> PathBuf {
 
 #[cfg(not(debug_assertions))]
 fn share_dir() -> PathBuf {
-    let share = dirs::home_dir().expect("failed to open home directory").join(".local/share");
+    let share = dirs::home_dir()
+        .expect("failed to open home directory")
+        .join(".local/share");
 
     share.join("reader")
 }
