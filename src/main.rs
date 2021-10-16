@@ -1,78 +1,58 @@
-use pyo3::prelude::*;
+use anyhow::Result;
+use std::cell::RefCell;
+use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
-#[derive(Debug)]
-struct Token {
-    sentence: String,
-    text: String,
-    pos: String,
-    lemma: String,
+use app::launch_app;
+use database::word;
+use database::{
+    Database, File, FileState, Filter, Operation, ReaderState, Sort, StatisticsState, Status,
+    Token, TokenInfo, TokenState, Word,
+};
+
+pub use application_state::{ApplicationState, View};
+
+pub mod app;
+pub mod application_state;
+pub mod database;
+
+#[cfg(debug_assertions)]
+fn share_dir() -> PathBuf {
+    let resources = Path::new(env!("CARGO_MANIFEST_DIR")).join("resources");
+
+    resources.join("reader")
 }
 
-#[derive(Debug)]
-struct Tokenizer {
-    nlp: PyObject,
+#[cfg(not(debug_assertions))]
+fn share_dir() -> PathBuf {
+    let share = dirs::home_dir()
+        .expect("failed to open home directory")
+        .join(".local/share");
+
+    share.join("reader")
 }
 
-impl Tokenizer {
-    fn new() -> Self {
-        Python::with_gil(|py| -> PyResult<Tokenizer> {
-            let spacy = PyModule::import(py, "spacy")?;
-            let tokenizer_module = PyModule::from_code(py, r#"
+pub fn main() -> Result<()> {
+    let share_dir = share_dir();
 
-def tokenizer(spacy):
-    nlp = spacy.load("ja_core_news_lg")
-    return nlp
+    let database = Rc::new(RefCell::new(Database::new(&share_dir)?));
+    let reader_state = database.borrow_mut().current()?;
+    let statistics_state = StatisticsState::empty();
+    let token_state = TokenState::empty();
+    let file_state = FileState::empty();
 
-            "#, "tokenizer.py", "tokenizer")?;
+    let initial_state = ApplicationState {
+        reader_state,
+        statistics_state,
+        token_state,
+        file_state,
 
-            let nlp: PyObject  = tokenizer_module.getattr("tokenizer")?.call1((spacy,))?.extract()?;
+        current_view: View::Reader,
 
-            Ok(Tokenizer {
-                nlp,
-            })
-        }).unwrap()
+        database,
+    };
 
-    }
+    launch_app(initial_state)?;
 
-    fn tokenize(&self, sentence: &str) -> Vec<Token> {
-        Python::with_gil(|py| -> PyResult<Vec<Token>> {
-            let tokenizer = PyModule::from_code(py, r#"
-
-def tokenize(nlp, sentence):
-    doc = nlp(sentence)
-    return doc
-
-        "#, "tokenizer.py", "tokenizer")?;
-
-        let tokens: Vec<&PyAny> = tokenizer.getattr("tokenize")?.call1((self.nlp.as_ref(py), sentence))?.extract()?;
-
-        Ok(tokens.iter().map(|x| Token {
-                sentence: sentence.to_string(),
-                text: x.getattr("text").unwrap().to_string(),
-                pos: x.getattr("pos_").unwrap().to_string(),
-                lemma: x.getattr("lemma_").unwrap().to_string()
-                }).collect())
-
-        }).unwrap()
-    }
+    Ok(())
 }
-
-fn main() {
-    let tokenizer = Tokenizer::new();
-
-    let sentences = vec!["でも、方針も決まったし、もう私に迷いは無い！", "ベッドの上に立ち上がり騒いでいたら、またお母さんに怒られた。", "そして、私はそのままベッドに潜り込んで眠りにつく。良い夢が……陽信の夢が見られるといいな。"];
-
-    for sentence in sentences.iter() {
-        let tokens = tokenizer.tokenize(sentence);
-
-        println!("{:?}", sentence);
-        
-        for token in tokens.iter() {
-            println!("{:?} {:?} {:?}", token.text, token.lemma, token.pos);
-        }
-    }
-
-
-
-}
-

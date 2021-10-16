@@ -1,5 +1,5 @@
 [package]
-name = "reader_rs"
+name = "reader"
 version = "0.1.0"
 authors = ["Odaka Ui <31593320+odakaui@users.noreply.github.com>"]
 edition = "2018"
@@ -7,7 +7,12 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
-[dependencies.pyo3]
-version = "0.14.5"
-features = ["auto-initialize"]
+anyhow = "^1"
+chrono = "^0.4"
+druid = "^0.7"
+dirs = "^4"
+env_logger ="^0.9"
+lindera = "^0.8"
+ron = "*"
+rusqlite = { version = "^0.25", features = ["chrono"] }
+serde = { version = "^1", features = ["rc"] }
