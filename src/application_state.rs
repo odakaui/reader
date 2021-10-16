@@ -1,7 +1,7 @@
 use druid::{Data, Lens};
 use std::{cell::RefCell, rc::Rc};
 
-use super::{Database, ReaderState, StatisticsState, TokenState};
+use super::{FileState, Database, ReaderState, StatisticsState, TokenState};
 
 #[derive(Clone, Debug, Data, PartialEq)]
 pub enum View {
@@ -10,6 +10,7 @@ pub enum View {
     Reader,
     Statistics,
     Tokens,
+    Files,
 }
 
 #[derive(Clone, Data, Lens)]
@@ -17,6 +18,7 @@ pub struct ApplicationState {
     pub reader_state: ReaderState,
     pub statistics_state: StatisticsState,
     pub token_state: TokenState,
+    pub file_state: FileState,
 
     pub current_view: View,
 

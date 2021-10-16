@@ -1,4 +1,4 @@
-use super::{MARK_KNOWN, MARK_UNKNOWN, READER, REDO, STATISTICS, TOKENS, UNDO};
+use super::{OPEN, MARK_KNOWN, MARK_UNKNOWN, FILES, READER, REDO, STATISTICS, TOKENS, UNDO};
 use crate::{ApplicationState, Operation, View, Filter};
 use anyhow::{anyhow, Result};
 use druid::{commands, AppDelegate, Command, DelegateCtx, Env, Handled, Target};
@@ -57,6 +57,18 @@ impl AppDelegate<ApplicationState> for Delegate {
             println!("Tokens");
 
             self.tokens(data).expect("tokens failed.");
+
+            return Handled::Yes;
+        } else if cmd.is(FILES) {
+            println!("Files");
+
+            self.files(data).expect("files failed.");
+
+            return Handled::Yes;
+        } else if cmd.is(OPEN) {
+            println!("Open");
+
+            self.open(data, *cmd.get(OPEN).unwrap()).expect("open failed.");
 
             return Handled::Yes;
         }
@@ -118,11 +130,30 @@ impl Delegate {
         Ok(())
     }
 
+    fn files(&self, data: &mut ApplicationState) -> Result<()> {
+        let database = data.database.borrow_mut();
+        data.file_state = database.files()?;
+
+        data.current_view = View::Files;
+
+        Ok(())
+    }
+
     fn tokens(&self, data: &mut ApplicationState) -> Result<()> {
         let database = data.database.borrow_mut();
         data.token_state = database.tokens(&Filter::All)?;
 
         data.current_view = View::Tokens;
+
+        Ok(())
+    }
+
+    fn open(&self, data: &mut ApplicationState, id: i32) -> Result<()> {
+        let mut database = data.database.borrow_mut();
+
+        data.reader_state = database.open(id)?;
+
+        data.current_view = View::Reader;
 
         Ok(())
     }

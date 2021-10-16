@@ -2,10 +2,10 @@ use anyhow::{anyhow, Result};
 use rusqlite::Connection;
 use std::path::{Path, PathBuf};
 
-use file::File;
 use state::{Position, State};
 use tokenizer::Tokenizer;
 
+pub use file::File;
 pub use database_error::DatabaseError;
 pub use file::word;
 pub use file::Word;
@@ -16,6 +16,7 @@ pub use statistics_state::StatisticsState;
 pub use token::{Token, POS};
 pub use token_info::TokenInfo;
 pub use token_state::{Filter, Sort, TokenState};
+pub use file_state::FileState;
 
 mod common;
 mod database_error;
@@ -29,6 +30,7 @@ mod token;
 mod token_info;
 mod token_state;
 mod tokenizer;
+mod file_state;
 
 pub struct Database {
     files_dir: PathBuf,
@@ -220,6 +222,12 @@ impl Database {
         TokenInfo::save(conn, tokens)?;
 
         file::tokens(conn, filter)
+    }
+
+    pub fn files(&self) -> Result<FileState> {
+        let conn = &self.conn;
+
+        file::files(conn)
     }
 }
 

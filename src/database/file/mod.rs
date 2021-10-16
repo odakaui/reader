@@ -1,7 +1,7 @@
 use super::{common, history, history_token, state};
 use super::{
     DatabaseError, Filter, Operation, Position, Sort, State, StatisticsState, Token, TokenInfo,
-    TokenState, Tokenizer, POS,
+    TokenState, Tokenizer, POS, FileState
 };
 use anyhow::{anyhow, Context, Result};
 use rusqlite::{params, Connection};
@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::cmp::Reverse;
 use std::sync::Arc;
 use std::{fs, path};
+use druid::{Data, Lens};
 
 pub use line::Line;
 pub use word::Word;
@@ -17,11 +18,11 @@ pub mod current_file;
 pub mod line;
 pub mod word;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Data, Deserialize, Lens, Serialize)]
 pub struct File {
     pub id: i32,
     pub name: String,
-    pub lines: Vec<Line>,
+    pub lines: Arc<Vec<Line>>,
 }
 
 pub fn initialize(conn: &Connection, target_dir: &path::PathBuf) -> Result<()> {
@@ -81,7 +82,7 @@ pub fn select_file(conn: &Connection, target_dir: &path::PathBuf, id: i32) -> Re
             Ok(File {
                 id: row.get(0)?,
                 name,
-                lines,
+                lines: Arc::new(lines),
             })
         },
     )?;
@@ -221,6 +222,30 @@ pub fn statistics(conn: &Connection, file: &File) -> Result<StatisticsState> {
 pub fn tokens(conn: &Connection, filter: &Filter) -> Result<TokenState> {
     let tokens = TokenInfo::all(conn)?;
     Ok(TokenState::new(&tokens, &Sort::Total, filter))
+}
+
+pub fn files(conn: &Connection) -> Result<FileState> {
+    let files = select_files(conn)?; 
+
+    Ok(FileState::new(&files))
+}
+
+fn select_files(conn: &Connection) -> Result<Vec<File>> {
+    let mut stmt = conn.prepare(
+        r#"SELECT id, name FROM files"#
+        )?;
+
+    let results = stmt.query_map(
+        [],
+        |row| {
+            Ok(File {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                lines: Arc::new(Vec::new()),
+            })
+        })?.flatten().collect();
+
+    Ok(results)
 }
 
 fn save_file(source_file: &path::PathBuf, target_dir: &path::PathBuf, name: &str) -> Result<()> {

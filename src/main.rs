@@ -6,8 +6,8 @@ use std::rc::Rc;
 use app::launch_app;
 use database::word;
 use database::{
-    Database, Filter, Operation, ReaderState, Sort, StatisticsState, Status, Token, TokenInfo,
-    TokenState, Word,
+    Database, File, Filter, Operation, ReaderState, Sort, StatisticsState, Status, Token, TokenInfo,
+    TokenState, Word, FileState
 };
 
 pub use application_state::{ApplicationState, View};
@@ -25,11 +25,13 @@ pub fn main() -> Result<()> {
     let reader_state = database.borrow_mut().current()?;
     let statistics_state = StatisticsState::empty();
     let token_state = TokenState::empty();
+    let file_state = FileState::empty();
 
     let initial_state = ApplicationState {
         reader_state,
         statistics_state,
         token_state,
+        file_state,
 
         current_view: View::Reader,
 

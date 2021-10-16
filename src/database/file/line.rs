@@ -1,8 +1,9 @@
 use super::word;
 use super::{Deserialize, Result, Serialize, Tokenizer, Word, POS};
 use std::sync::Arc;
+use druid::{Data, Lens};
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Data, Lens, Deserialize, Serialize)]
 pub struct Line {
     pub sentence: String,
     pub words: Arc<Vec<Word>>,
