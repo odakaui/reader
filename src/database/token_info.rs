@@ -6,8 +6,8 @@ use rusqlite::Connection;
 
 #[derive(Clone, Debug, PartialEq, Data, Lens)]
 pub struct TokenInfo {
-    token: Token,
-    history_token: HistoryToken,
+    pub token: Token,
+    pub history_token: HistoryToken,
 }
 
 impl TokenInfo {
@@ -46,6 +46,14 @@ impl TokenInfo {
             })
             .flatten()
             .collect())
+    }
+    
+    pub fn save(conn: &Connection, tokens: &Vec<TokenInfo>) -> Result<()> {
+        for info in tokens.iter() {
+            token::update_token(conn, info.history_token.token_id, &info.token)?;
+        }
+
+        Ok(())
     }
 
     pub fn total_seen(&self) -> i32 {

@@ -35,6 +35,7 @@ impl Tokenizer {
                 },
                 pos: converter::convert_pos(x.detail[0].as_ref()),
                 text: x.text.to_string(),
+                learned: false,
             })
             .collect()
     }
@@ -58,36 +59,43 @@ mod tests {
                 lemma: "『".to_string(),
                 pos: PUNCT,
                 text: "『".to_string(),
+                learned: false,
             },
             Token {
                 lemma: "愛妻".to_string(),
                 pos: NOUN,
                 text: "愛妻".to_string(),
+                learned: false,
             },
             Token {
                 lemma: "弁当".to_string(),
                 pos: NOUN,
                 text: "弁当".to_string(),
+                learned: false,
             },
             Token {
                 lemma: "だ".to_string(),
                 pos: AUX,
                 text: "だ".to_string(),
+                learned: false,
             },
             Token {
                 lemma: "ー".to_string(),
                 pos: UNKNOWN,
                 text: "ー".to_string(),
+                learned: false,
             },
             Token {
                 lemma: "？".to_string(),
                 pos: PUNCT,
                 text: "？".to_string(),
+                learned: false,
             },
             Token {
                 lemma: "』".to_string(),
                 pos: PUNCT,
                 text: "』".to_string(),
+                learned: false,
             },
         ];
 

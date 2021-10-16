@@ -12,6 +12,7 @@ pub struct Token {
     pub lemma: String,
     pub text: String,
     pub pos: POS,
+    pub learned: bool,
 }
 
 pub fn initialize(conn: &Connection) -> Result<()> {
@@ -20,7 +21,8 @@ pub fn initialize(conn: &Connection) -> Result<()> {
             id INTEGER PRIMARY KEY,
             lemma TEXT NOT NULL UNIQUE,
             text TEXT NOT NULL,
-            pos INTEGER NOT NULL
+            pos INTEGER NOT NULL,
+            learned INTEGER NOT NULL DEFAULT 0
         )"#,
         [],
     )?;
@@ -45,13 +47,14 @@ pub fn delete_token(conn: &Connection, lemma: &str) -> Result<()> {
 
 pub fn select_token(conn: &Connection, id: i32) -> Result<Token> {
     Ok(conn.query_row(
-        r#"SELECT lemma, text, pos FROM tokens WHERE id=?1"#,
+        r#"SELECT lemma, text, pos, learned FROM tokens WHERE id=?1"#,
         params![id],
         |row| {
             Ok(Token {
                 lemma: row.get(0)?,
                 text: row.get(1)?,
                 pos: POS::to_pos(row.get(2)?),
+                learned: row.get::<usize, i32>(3)? == 1,
             })
         },
     )?)
@@ -63,4 +66,13 @@ pub fn select_token_id(conn: &Connection, lemma: &str) -> Result<i32> {
         params![lemma],
         |row| Ok(row.get::<usize, i32>(0)?),
     )?)
+}
+
+pub fn update_token(conn: &Connection, id: i32, token: &Token) -> Result<()> {
+    conn.execute(
+        r#"UPDATE tokens SET learned=?1 WHERE id=?2"#,
+        params![token.learned, id]
+    )?;
+
+    Ok(())
 }

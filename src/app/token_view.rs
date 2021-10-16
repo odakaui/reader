@@ -1,7 +1,7 @@
 use super::VERTICAL_WIDGET_SPACING;
-use crate::{ApplicationState, Filter, Sort, StatisticsState, Status, TokenInfo, TokenState};
-use druid::widget::{Button, Flex, Label, List, Scroll};
-use druid::{Env, FontDescriptor, FontFamily, Insets, LensExt, Widget, WidgetExt};
+use crate::{ApplicationState, Filter, Sort, Token, TokenInfo, TokenState};
+use druid::widget::{Button, Checkbox, Controller, Flex, Label, List, Scroll};
+use druid::{Env, FontDescriptor, FontFamily, Insets, LensExt, UpdateCtx, Widget, WidgetExt};
 use std::cmp::Reverse;
 use std::sync::Arc;
 
@@ -83,30 +83,68 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
         .with_child(filter_button)
         .expand_width();
 
-    let list = Scroll::new(List::new(move || {
-        Label::new(|info: &TokenInfo, _: &Env| format_info(info))
-            .with_font(data_font.clone())
-            .align_left()
-    }))
-    .vertical()
-    .align_left()
-    .lens(ApplicationState::token_state.then(TokenState::tokens));
+    let save_label = Label::new("Save").with_font(data_font.clone());
+
+    let save_button =
+        Button::from_label(save_label).on_click(|_ctx, data: &mut ApplicationState, _env| {
+            let database = data.database.borrow_mut();
+
+            data.token_state = database.save(&data.token_state.tokens).expect("Failed to save tokens");
+        });
+
+    let footer = Flex::row()
+        .with_flex_spacer(1.0)
+        .with_child(save_button)
+        .expand_width();
+
+    fn create_row(font: FontDescriptor) -> Flex<TokenInfo> {
+        let lemma_label = Label::new(|info: &TokenInfo, _env: &Env| info.lemma())
+            .with_font(font.clone())
+            .with_line_break_mode(druid::widget::LineBreaking::Clip)
+            .fix_width(400.);
+
+        let total_label = Label::new(|info: &TokenInfo, _env: &Env| info.total_seen().to_string())
+            .with_font(font.clone())
+            .with_line_break_mode(druid::widget::LineBreaking::Clip)
+            .fix_width(100.);
+
+        let unknown_label =
+            Label::new(|info: &TokenInfo, _env: &Env| info.total_unknown().to_string())
+                .with_font(font.clone())
+                .with_line_break_mode(druid::widget::LineBreaking::Clip)
+                .fix_width(100.);
+
+        let percent_label =
+            Label::new(|info: &TokenInfo, _env: &Env| info.percent_known().to_string())
+                .with_font(font)
+                .with_line_break_mode(druid::widget::LineBreaking::Clip)
+                .fix_width(100.);
+
+        let learned_switch = Checkbox::new("Learned").lens(TokenInfo::token.then(Token::learned));
+
+        Flex::row()
+            .with_child(lemma_label)
+            .with_flex_spacer(1.0)
+            .with_child(total_label)
+            .with_child(unknown_label)
+            .with_child(percent_label)
+            .with_child(learned_switch)
+    }
+
+    let list = Scroll::new(List::new(move || create_row(data_font.clone())))
+        .vertical()
+        .align_left()
+        .lens(ApplicationState::token_state.then(TokenState::tokens));
+
 
     let view = Flex::column()
         .with_child(header)
         .with_spacer(VERTICAL_WIDGET_SPACING)
-        .with_flex_child(list, 1.0);
+        .with_flex_child(list, 1.0)
+        .with_spacer(VERTICAL_WIDGET_SPACING)
+        .with_child(footer);
 
     WidgetExt::center(view)
-}
-
-fn format_info(info: &TokenInfo) -> String {
-    format!(
-        "{}, {} (marked as known {}% of the time)",
-        info.total_unknown(),
-        info.lemma(),
-        info.percent_known()
-    )
 }
 
 fn sort_info(info: Vec<TokenInfo>, sort: &Sort, reverse: bool) -> Arc<Vec<TokenInfo>> {
@@ -126,7 +164,6 @@ fn sort_info(info: Vec<TokenInfo>, sort: &Sort, reverse: bool) -> Arc<Vec<TokenI
             } else {
                 info.sort_by_key(|token| token.total_unknown());
             }
-
         }
         Sort::Percent => {
             if reverse {

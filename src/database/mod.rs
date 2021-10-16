@@ -4,7 +4,6 @@ use std::path::{Path, PathBuf};
 
 use file::File;
 use state::{Position, State};
-use token::{Token, POS};
 use tokenizer::Tokenizer;
 
 pub use database_error::DatabaseError;
@@ -14,6 +13,7 @@ pub use history_token::HistoryToken;
 pub use reader_state::{ReaderState, Status};
 pub use state::Operation;
 pub use statistics_state::StatisticsState;
+pub use token::{Token, POS};
 pub use token_info::TokenInfo;
 pub use token_state::{Filter, Sort, TokenState};
 
@@ -211,6 +211,14 @@ impl Database {
     pub fn tokens(&self) -> Result<TokenState> {
         let conn = &self.conn;
         let file = get_file(&self.file)?;
+
+        file::tokens(conn)
+    }
+
+    pub fn save(&self, tokens: &Vec<TokenInfo>) -> Result<TokenState> {
+        let conn = &self.conn;
+
+        TokenInfo::save(conn, tokens)?;
 
         file::tokens(conn)
     }

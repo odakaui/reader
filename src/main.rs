@@ -6,8 +6,8 @@ use std::rc::Rc;
 use app::launch_app;
 use database::word;
 use database::{
-    Database, Filter, Operation, ReaderState, Sort, StatisticsState, Status, TokenInfo, TokenState,
-    Word,
+    Database, Filter, Operation, ReaderState, Sort, StatisticsState, Status, Token, TokenInfo,
+    TokenState, Word,
 };
 
 pub use application_state::{ApplicationState, View};
