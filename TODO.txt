@@ -2,14 +2,17 @@ Probably refactor and simplify code first before any new features.
 
 
 
+[IMPORTANT] Use Selectors and Commands for all view commands to clean up code.
+[IMPORTANT] Make tokens save whenever a checkbox is checked or unchecked.
+
+[SIMPLIFY] Remove filtering for tokens and only show tokens sorted by unknown?
+
 Improve the formatting on the statistics screen.
 
 There must be a better way to do copying.
 
-[IMPORTANT] Use Selectors and Commands for all view commands to clean up code.
 
 Fix layout of token view with few tokens.
-Make tokens save whenever a checkbox is checked or unchecked.
 Save filter and sort for token view in the database.
 Remove expect statements in token_view.
 Refactor token_view and related database methods.
