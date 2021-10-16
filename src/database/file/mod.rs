@@ -218,9 +218,9 @@ pub fn statistics(conn: &Connection, file: &File) -> Result<StatisticsState> {
     })
 }
 
-pub fn tokens(conn: &Connection) -> Result<TokenState> {
+pub fn tokens(conn: &Connection, filter: &Filter) -> Result<TokenState> {
     let tokens = TokenInfo::all(conn)?;
-    Ok(TokenState::new(&tokens, &Sort::Total, &Filter::All))
+    Ok(TokenState::new(&tokens, &Sort::Total, filter))
 }
 
 fn save_file(source_file: &path::PathBuf, target_dir: &path::PathBuf, name: &str) -> Result<()> {

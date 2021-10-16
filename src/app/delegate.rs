@@ -1,5 +1,5 @@
 use super::{MARK_KNOWN, MARK_UNKNOWN, READER, REDO, STATISTICS, TOKENS, UNDO};
-use crate::{ApplicationState, Operation, View};
+use crate::{ApplicationState, Operation, View, Filter};
 use anyhow::{anyhow, Result};
 use druid::{commands, AppDelegate, Command, DelegateCtx, Env, Handled, Target};
 use std::{fs, io::BufReader, io::Read, path::Path};
@@ -120,7 +120,7 @@ impl Delegate {
 
     fn tokens(&self, data: &mut ApplicationState) -> Result<()> {
         let database = data.database.borrow_mut();
-        data.token_state = database.tokens()?;
+        data.token_state = database.tokens(&Filter::All)?;
 
         data.current_view = View::Tokens;
 

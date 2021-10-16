@@ -47,7 +47,7 @@ impl TokenInfo {
             .flatten()
             .collect())
     }
-    
+
     pub fn save(conn: &Connection, tokens: &Vec<TokenInfo>) -> Result<()> {
         for info in tokens.iter() {
             token::update_token(conn, info.history_token.token_id, &info.token)?;

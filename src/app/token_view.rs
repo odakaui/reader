@@ -1,7 +1,7 @@
 use super::VERTICAL_WIDGET_SPACING;
 use crate::{ApplicationState, Filter, Sort, Token, TokenInfo, TokenState};
 use druid::widget::{Button, Checkbox, Controller, Flex, Label, List, Scroll};
-use druid::{Env, FontDescriptor, FontFamily, Insets, LensExt, UpdateCtx, Widget, WidgetExt};
+use druid::{Env, EventCtx, FontDescriptor, FontFamily, Insets, LensExt, UpdateCtx, Widget, WidgetExt};
 use std::cmp::Reverse;
 use std::sync::Arc;
 
@@ -64,15 +64,26 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
             data.token_state.sort = Sort::Total;
         });
 
-    let filter_label = Label::new(|filter: &Filter, _: &Env| match filter {
+    let filter_label = Label::new(|data: &ApplicationState, _env: &Env| {
+        let filter = &data.token_state.filter;
+
+        match filter {
         Filter::All => "All".to_string(),
         Filter::Learned => "Learned".to_string(),
         Filter::Unlearned => "Unlearned".to_string(),
-    })
+    }}
+    )
     .with_font(data_font.clone());
 
-    let filter_button = Button::from_label(filter_label)
-        .lens(ApplicationState::token_state.then(TokenState::filter));
+    let filter_button =
+        Button::from_label(filter_label).on_click(|_ctx: &mut EventCtx, data: &mut ApplicationState, _env: &Env| {
+            let database = data.database.borrow_mut();
+
+            let filter =  filter_type(&data.token_state.filter);
+            data.token_state = database.tokens(&filter).expect("failed to load tokens");
+
+            data.token_state.tokens = filter_info(data.token_state.tokens.to_vec(), &data.token_state.filter);
+        });
 
     let header = Flex::row()
         .with_child(header_label)
@@ -89,7 +100,9 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
         Button::from_label(save_label).on_click(|_ctx, data: &mut ApplicationState, _env| {
             let database = data.database.borrow_mut();
 
-            data.token_state = database.save(&data.token_state.tokens).expect("Failed to save tokens");
+            data.token_state = database
+                .save(&data.token_state.tokens, &data.token_state.filter)
+                .expect("failed to save tokens");
         });
 
     let footer = Flex::row()
@@ -136,7 +149,6 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
         .align_left()
         .lens(ApplicationState::token_state.then(TokenState::tokens));
 
-
     let view = Flex::column()
         .with_child(header)
         .with_spacer(VERTICAL_WIDGET_SPACING)
@@ -175,6 +187,30 @@ fn sort_info(info: Vec<TokenInfo>, sort: &Sort, reverse: bool) -> Arc<Vec<TokenI
     }
 
     Arc::new(info.to_vec())
+}
+
+fn filter_info(info: Vec<TokenInfo>, filter: &Filter) -> Arc<Vec<TokenInfo>> {
+    let mut info = info;
+
+    match *filter {
+        Filter::All => {
+            Arc::new(info.to_vec())
+        },
+        Filter::Learned => {
+            Arc::new(info.into_iter().filter(|info| info.token.learned == true).collect::<Vec<TokenInfo>>().to_vec())
+        },
+        Filter::Unlearned => {
+            Arc::new(info.into_iter().filter(|info| info.token.learned != true).collect::<Vec<TokenInfo>>().to_vec())
+        }
+    }
+}
+
+fn filter_type(filter: &Filter) -> Filter {
+    match filter {
+        Filter::All => Filter::Unlearned,
+        Filter::Unlearned => Filter::Learned,
+        Filter::Learned => Filter::All,
+    }
 }
 
 fn reverse(b: bool) -> bool {

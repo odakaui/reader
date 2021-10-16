@@ -208,19 +208,18 @@ impl Database {
         file::statistics(conn, &file)
     }
 
-    pub fn tokens(&self) -> Result<TokenState> {
+    pub fn tokens(&self, filter: &Filter) -> Result<TokenState> {
         let conn = &self.conn;
-        let file = get_file(&self.file)?;
 
-        file::tokens(conn)
+        file::tokens(conn, filter)
     }
 
-    pub fn save(&self, tokens: &Vec<TokenInfo>) -> Result<TokenState> {
+    pub fn save(&self, tokens: &Vec<TokenInfo>, filter: &Filter) -> Result<TokenState> {
         let conn = &self.conn;
 
         TokenInfo::save(conn, tokens)?;
 
-        file::tokens(conn)
+        file::tokens(conn, filter)
     }
 }
 
