@@ -25,22 +25,28 @@ impl Word {
 
         Word { text, tokens }
     }
-}
 
-pub fn to_words(tokens: &Vec<Token>) -> Vec<Word> {
-    let mut stored: Vec<Token> = Vec::new();
-    let mut words: Vec<Word> = Vec::new();
+    pub fn to_words(tokens: &Vec<Token>) -> Vec<Word> {
+        let mut stored: Vec<Token> = Vec::new();
+        let mut words: Vec<Word> = Vec::new();
 
-    for token in tokens.iter() {
-        if !is_legal(token, &stored) {
-            words.push(Word::new(&stored));
+        for token in tokens.iter() {
+            if !is_legal(token, &stored) {
+                words.push(Word::new(&stored));
 
-            stored.clear();
+                stored.clear();
+            }
+
+            stored.push(token.clone());
         }
-        stored.push(token.clone());
+
+        if !stored.is_empty() {
+            words.push(Word::new(&stored));
+        }
+
+        words
     }
 
-    words
 }
 
 fn is_legal(token: &Token, stored: &[Token]) -> bool {
@@ -140,4 +146,27 @@ fn contains_filler(tokens: &[Token]) -> bool {
 
 fn is_filler(token: &Token) -> bool {
     !(is_term(token) || is_punctuation(token) || is_unknown(token))
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use super::super::Tokenizer;
+    use anyhow::Result;
+
+    #[test]
+    fn test_to_words() -> Result<()> {
+        let original = "なんとか今日を生き延びた僕は、帰りに七海さんと一緒に生活雑貨を扱うバラエティショップへと来ていた。";
+
+        let mut tokenizer = Tokenizer::new()?;
+        let tokens = tokenizer.tokenize(original)?;
+
+        let words = Word::to_words(&tokens);
+
+        let sentence = words.iter().fold(String::new(), |sentence, word| sentence + &word.tokens.iter().fold(String::new(), |word, token| word + &token.text));
+
+        assert_eq!(sentence, original, "sentence {} is not equal to original {}.", sentence, original);
+
+        Ok(())
+    }
 }
