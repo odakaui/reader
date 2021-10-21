@@ -1,4 +1,4 @@
-use super::{COPY, FILES, MARK_KNOWN, MARK_UNKNOWN, OPEN, READER, REDO, STATISTICS, TOKENS, UNDO};
+use super::{COPY, FILES, MARK_KNOWN, LEARNED, MARK_UNKNOWN, OPEN, READER, REDO, STATISTICS, TOKENS, UNDO};
 use crate::{ApplicationState, Filter, Operation, View};
 use anyhow::{anyhow, Result};
 use druid::{
@@ -79,6 +79,17 @@ impl AppDelegate<ApplicationState> for Delegate {
 
             let mut clipboard = Application::global().clipboard();
             clipboard.put_string(cmd.get(COPY).unwrap());
+        } else if cmd.is(LEARNED) {
+            println!("Learned");
+
+            let database = data.database.borrow_mut();
+
+            let id = *cmd.get(LEARNED).expect("Failed to unwrap token id");
+            let filter = &data.token_state.filter;
+
+            let token_state = database.update_learned(id, filter).expect("Failed to update token id");
+
+            data.token_state = token_state;
         }
 
         if let Some(file_info) = cmd.get(commands::OPEN_FILE) {

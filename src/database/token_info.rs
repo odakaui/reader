@@ -48,14 +48,6 @@ impl TokenInfo {
             .collect())
     }
 
-    pub fn save(conn: &Connection, tokens: &Vec<TokenInfo>) -> Result<()> {
-        for info in tokens.iter() {
-            token::update_token(conn, info.history_token.token_id, &info.token)?;
-        }
-
-        Ok(())
-    }
-
     pub fn total_seen(&self) -> i32 {
         self.history_token.total_seen
     }

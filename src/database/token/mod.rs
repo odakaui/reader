@@ -68,11 +68,25 @@ pub fn select_token_id(conn: &Connection, lemma: &str) -> Result<i32> {
     )?)
 }
 
-pub fn update_token(conn: &Connection, id: i32, token: &Token) -> Result<()> {
+pub fn toggle_learned(conn: &Connection, id: i32) -> Result<bool> {
+    let token = select_token(conn, id)?;
+
+    let learned = match token.learned {
+        true => false,
+        false => true,
+    };
+
+    update_token(conn, id, learned)?;
+
+    Ok(learned)
+}
+
+fn update_token(conn: &Connection, id: i32, learned: bool) -> Result<()> {
     conn.execute(
         r#"UPDATE tokens SET learned=?1 WHERE id=?2"#,
-        params![token.learned, id],
+        params![learned, id],
     )?;
 
     Ok(())
 }
+

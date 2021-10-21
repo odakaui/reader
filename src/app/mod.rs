@@ -37,6 +37,7 @@ const TOKENS: Selector<()> = Selector::new("TOKENS");
 const OPEN: Selector<i32> = Selector::new("OPEN");
 const FILES: Selector<()> = Selector::new("FILES");
 const COPY: Selector<String> = Selector::new("COPY");
+const LEARNED: Selector<i32> = Selector::new("LEARNED");
 
 pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
     // create the open file dialogue

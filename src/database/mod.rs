@@ -216,10 +216,9 @@ impl Database {
         file::tokens(conn, filter)
     }
 
-    pub fn save(&self, tokens: &Vec<TokenInfo>, filter: &Filter) -> Result<TokenState> {
+    pub fn update_learned(&self, id: i32, filter: &Filter) -> Result<TokenState> {
         let conn = &self.conn;
-
-        TokenInfo::save(conn, tokens)?;
+        token::toggle_learned(conn, id)?;
 
         file::tokens(conn, filter)
     }

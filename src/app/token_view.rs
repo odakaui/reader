@@ -1,4 +1,4 @@
-use super::{COPY, VERTICAL_WIDGET_SPACING};
+use super::{LEARNED, COPY, VERTICAL_WIDGET_SPACING};
 use crate::{ApplicationState, Filter, Sort, Token, TokenInfo, TokenState};
 use druid::widget::{Button, Checkbox, Controller, Flex, Label, List, Scroll};
 use druid::{
@@ -99,22 +99,6 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
         .with_child(filter_button)
         .expand_width();
 
-    let save_label = Label::new("Save").with_font(data_font.clone());
-
-    let save_button =
-        Button::from_label(save_label).on_click(|_ctx, data: &mut ApplicationState, _env| {
-            let database = data.database.borrow_mut();
-
-            data.token_state = database
-                .save(&data.token_state.tokens, &data.token_state.filter)
-                .expect("failed to save tokens");
-        });
-
-    let footer = Flex::row()
-        .with_flex_spacer(1.0)
-        .with_child(save_button)
-        .expand_width();
-
     fn create_row(font: FontDescriptor) -> Flex<TokenInfo> {
         let lemma_label = Label::new(|info: &TokenInfo, _env: &Env| info.lemma())
             .with_font(font.clone())
@@ -138,7 +122,17 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
                 .with_line_break_mode(druid::widget::LineBreaking::Clip)
                 .fix_width(100.);
 
-        let learned_switch = Checkbox::new("Learned").lens(TokenInfo::token.then(Token::learned));
+        let learned_label = Label::new(|info: &TokenInfo, _env: &Env| match info.token.learned {
+            true => "Learned".to_string(),
+            false => "Not Learned".to_string(),
+        })
+        .with_font(font.clone())
+        .with_line_break_mode(druid::widget::LineBreaking::Clip);
+
+        let learned_button = Button::from_label(learned_label).on_click(|ctx: &mut EventCtx, info: &mut TokenInfo, _env| {
+            ctx.submit_command(Command::new(LEARNED, info.history_token.token_id, Target::Auto)); 
+        })
+        .fix_width(200.);
 
         let copy_label = Label::new("Copy").with_font(font.clone());
 
@@ -154,7 +148,7 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
             .with_child(total_label)
             .with_child(unknown_label)
             .with_child(percent_label)
-            .with_child(learned_switch)
+            .with_child(learned_button)
             .with_child(copy_button)
     }
 
@@ -166,9 +160,7 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
     let view = Flex::column()
         .with_child(header)
         .with_spacer(VERTICAL_WIDGET_SPACING)
-        .with_flex_child(list, 1.0)
-        .with_spacer(VERTICAL_WIDGET_SPACING)
-        .with_child(footer);
+        .with_flex_child(list, 1.0);
 
     WidgetExt::center(view)
 }

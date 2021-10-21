@@ -46,7 +46,6 @@ impl Word {
 
         words
     }
-
 }
 
 fn is_legal(token: &Token, stored: &[Token]) -> bool {
@@ -150,8 +149,8 @@ fn is_filler(token: &Token) -> bool {
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use super::super::Tokenizer;
+    use super::*;
     use anyhow::Result;
 
     #[test]
@@ -163,9 +162,19 @@ mod test {
 
         let words = Word::to_words(&tokens);
 
-        let sentence = words.iter().fold(String::new(), |sentence, word| sentence + &word.tokens.iter().fold(String::new(), |word, token| word + &token.text));
+        let sentence = words.iter().fold(String::new(), |sentence, word| {
+            sentence
+                + &word
+                    .tokens
+                    .iter()
+                    .fold(String::new(), |word, token| word + &token.text)
+        });
 
-        assert_eq!(sentence, original, "sentence {} is not equal to original {}.", sentence, original);
+        assert_eq!(
+            sentence, original,
+            "sentence {} is not equal to original {}.",
+            sentence, original
+        );
 
         Ok(())
     }

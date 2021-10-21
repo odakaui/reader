@@ -29,11 +29,25 @@ mod test {
         let mut tokenizer = Tokenizer::new()?;
         let line = Line::new(&mut tokenizer, original)?;
 
-        assert_eq!(line.sentence, original, "line.sentence {} is not equal to original {}.", line.sentence, original);
-        
-        let sentence = line.words.iter().fold(String::new(), |sentence, word| sentence + &word.tokens.iter().fold(String::new(), |word, token| word + &token.text));
+        assert_eq!(
+            line.sentence, original,
+            "line.sentence {} is not equal to original {}.",
+            line.sentence, original
+        );
 
-        assert_eq!(sentence, original, "sentence from words {} is not equal to original {}.", sentence, original);
+        let sentence = line.words.iter().fold(String::new(), |sentence, word| {
+            sentence
+                + &word
+                    .tokens
+                    .iter()
+                    .fold(String::new(), |word, token| word + &token.text)
+        });
+
+        assert_eq!(
+            sentence, original,
+            "sentence from words {} is not equal to original {}.",
+            sentence, original
+        );
 
         Ok(())
     }
