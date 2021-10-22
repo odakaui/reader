@@ -1,8 +1,8 @@
-use super::{LEARNED, COPY, HORIZONTAL_WIDGET_SPACING, VERTICAL_WIDGET_SPACING};
+use super::{LEARNED, COPY, BORDER_COLOR, HORIZONTAL_WIDGET_SPACING, VERTICAL_WIDGET_SPACING};
 use crate::{ApplicationState, Filter, Sort, Token, TokenInfo, TokenState};
 use druid::widget::{Button, Checkbox, Controller, Flex, Label, List, Scroll};
 use druid::{
-    Command, Env, EventCtx, FontDescriptor, FontFamily, Insets, LensExt, Target, UpdateCtx, Widget,
+    Command, Env, EventCtx, FontDescriptor, FontFamily, Color, Insets, LensExt, Target, UpdateCtx, Widget,
     WidgetExt,
 };
 use std::cmp::Reverse;
@@ -99,7 +99,7 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
         .with_child(filter_button)
         .expand_width();
 
-    fn create_row(font: FontDescriptor) -> Flex<TokenInfo> {
+    fn create_row(font: FontDescriptor) -> impl Widget<TokenInfo> {
         let lemma_label = Label::new(|info: &TokenInfo, _env: &Env| info.lemma())
             .with_font(font.clone())
             .with_line_break_mode(druid::widget::LineBreaking::Clip)
@@ -150,6 +150,8 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
             .with_child(unknown_label)
             .with_child(percent_label)
             .with_child(copy_button)
+            .background(BORDER_COLOR)
+            .padding(2.)
     }
 
     let list = Scroll::new(List::new(move || create_row(data_font.clone())))

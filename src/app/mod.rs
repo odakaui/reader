@@ -25,6 +25,7 @@ mod token_view;
 const HORIZONTAL_WIDGET_SPACING: f64 = 32.0;
 const VERTICAL_WIDGET_SPACING: f64 = 32.0;
 const BACKGROUND_TEXT_COLOR: Key<Color> = Key::new("background-text-color");
+const BORDER_COLOR: Key<Color> = Key::new("border-color");
 const WINDOW_TITLE: LocalizedString<ApplicationState> = LocalizedString::new("Reader");
 
 const MARK_UNKNOWN: Selector<()> = Selector::new("MARK_UNKNOWN");
@@ -138,6 +139,10 @@ pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
             env.set(
                 BACKGROUND_TEXT_COLOR,
                 Color::from_hex_str("#3C3C3C").unwrap(),
+            );
+            env.set(
+                BORDER_COLOR,
+                Color::rgb8(0x36, 0x36, 0x36)
             );
         })
         .launch(initial_state)?;
