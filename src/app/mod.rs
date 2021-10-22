@@ -22,8 +22,8 @@ mod right_aligned_label;
 mod statistics_view;
 mod token_view;
 
-const HORIZONTAL_WIDGET_SPACING: f64 = 64.0;
-const VERTICAL_WIDGET_SPACING: f64 = 36.0;
+const HORIZONTAL_WIDGET_SPACING: f64 = 32.0;
+const VERTICAL_WIDGET_SPACING: f64 = 32.0;
 const BACKGROUND_TEXT_COLOR: Key<Color> = Key::new("background-text-color");
 const WINDOW_TITLE: LocalizedString<ApplicationState> = LocalizedString::new("Reader");
 

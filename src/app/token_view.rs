@@ -1,4 +1,4 @@
-use super::{LEARNED, COPY, VERTICAL_WIDGET_SPACING};
+use super::{LEARNED, COPY, HORIZONTAL_WIDGET_SPACING, VERTICAL_WIDGET_SPACING};
 use crate::{ApplicationState, Filter, Sort, Token, TokenInfo, TokenState};
 use druid::widget::{Button, Checkbox, Controller, Flex, Label, List, Scroll};
 use druid::{
@@ -105,10 +105,10 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
             .with_line_break_mode(druid::widget::LineBreaking::Clip)
             .fix_width(400.);
 
-        let total_label = Label::new(|info: &TokenInfo, _env: &Env| info.total_seen().to_string())
-            .with_font(font.clone())
-            .with_line_break_mode(druid::widget::LineBreaking::Clip)
-            .fix_width(100.);
+        // let total_label = Label::new(|info: &TokenInfo, _env: &Env| info.total_seen().to_string())
+        //     .with_font(font.clone())
+        //     .with_line_break_mode(druid::widget::LineBreaking::Clip)
+        //     .fix_width(100.);
 
         let unknown_label =
             Label::new(|info: &TokenInfo, _env: &Env| info.total_unknown().to_string())
@@ -134,7 +134,7 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
         })
         .fix_width(200.);
 
-        let copy_label = Label::new("Copy").with_font(font.clone());
+        let copy_label = Label::new("Copy").with_font(font);
 
         let copy_button = Button::from_label(copy_label).on_click(
             |ctx: &mut EventCtx, info: &mut TokenInfo, _env| {
@@ -143,12 +143,12 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
         );
 
         Flex::row()
+            .with_child(learned_button)
+            .with_spacer(HORIZONTAL_WIDGET_SPACING)
             .with_child(lemma_label)
             .with_flex_spacer(1.0)
-            .with_child(total_label)
             .with_child(unknown_label)
             .with_child(percent_label)
-            .with_child(learned_button)
             .with_child(copy_button)
     }
 

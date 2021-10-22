@@ -5,6 +5,8 @@ Probably refactor and simplify code first before any new features.
 [IMPORTANT] Use Selectors and Commands for all view commands to clean up code.
 [IMPORTANT] Make tokens save whenever a checkbox is checked or unchecked.
 
+Move the database instance to the AppDelegate
+
 [SIMPLIFY] Remove filtering for tokens and only show tokens sorted by unknown?
 
 Improve the formatting on the statistics screen.
