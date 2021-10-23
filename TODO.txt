@@ -2,6 +2,7 @@ Probably refactor and simplify code first before any new features.
 
 
 
+[IMPORTANT] Remove sorting. Save filtering across refresh.
 [IMPORTANT] Use Selectors and Commands for all view commands to clean up code.
 [IMPORTANT] Make tokens save whenever a checkbox is checked or unchecked.
 
