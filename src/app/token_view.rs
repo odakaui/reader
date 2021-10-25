@@ -16,56 +16,56 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
 
     let header_label = Label::new("Tokens").with_font(primary_font);
 
-    let unknown_label: Label<ApplicationState> = Label::new("Unknown").with_font(data_font.clone());
+    // let unknown_label: Label<ApplicationState> = Label::new("Unknown").with_font(data_font.clone());
 
-    let unknown_button =
-        Button::from_label(unknown_label).on_click(|_ctx, data: &mut ApplicationState, _env| {
-            if data.token_state.sort == Sort::Unknown {
-                data.token_state.reverse = reverse(data.token_state.reverse);
-            }
+    // let unknown_button =
+    //     Button::from_label(unknown_label).on_click(|_ctx, data: &mut ApplicationState, _env| {
+    //         if data.token_state.sort == Sort::Unknown {
+    //             data.token_state.reverse = reverse(data.token_state.reverse);
+    //         }
 
-            data.token_state.tokens = sort_info(
-                data.token_state.tokens.to_vec(),
-                &Sort::Unknown,
-                data.token_state.reverse,
-            );
+    //         data.token_state.tokens = sort_info(
+    //             data.token_state.tokens.to_vec(),
+    //             &Sort::Unknown,
+    //             data.token_state.reverse,
+    //         );
 
-            data.token_state.sort = Sort::Unknown;
-        });
+    //         data.token_state.sort = Sort::Unknown;
+    //     });
 
-    let percent_label = Label::new("Percent").with_font(data_font.clone());
+    // let percent_label = Label::new("Percent").with_font(data_font.clone());
 
-    let percent_button =
-        Button::from_label(percent_label).on_click(|_ctx, data: &mut ApplicationState, _env| {
-            if data.token_state.sort == Sort::Percent {
-                data.token_state.reverse = reverse(data.token_state.reverse);
-            }
+    // let percent_button =
+    //     Button::from_label(percent_label).on_click(|_ctx, data: &mut ApplicationState, _env| {
+    //         if data.token_state.sort == Sort::Percent {
+    //             data.token_state.reverse = reverse(data.token_state.reverse);
+    //         }
 
-            data.token_state.tokens = sort_info(
-                data.token_state.tokens.to_vec(),
-                &Sort::Percent,
-                data.token_state.reverse,
-            );
+    //         data.token_state.tokens = sort_info(
+    //             data.token_state.tokens.to_vec(),
+    //             &Sort::Percent,
+    //             data.token_state.reverse,
+    //         );
 
-            data.token_state.sort = Sort::Percent;
-        });
+    //         data.token_state.sort = Sort::Percent;
+    //     });
 
-    let total_label = Label::new("Total").with_font(data_font.clone());
+    // let total_label = Label::new("Total").with_font(data_font.clone());
 
-    let total_button =
-        Button::from_label(total_label).on_click(|_ctx, data: &mut ApplicationState, _env| {
-            if data.token_state.sort == Sort::Total {
-                data.token_state.reverse = reverse(data.token_state.reverse);
-            }
+    // let total_button =
+    //     Button::from_label(total_label).on_click(|_ctx, data: &mut ApplicationState, _env| {
+    //         if data.token_state.sort == Sort::Total {
+    //             data.token_state.reverse = reverse(data.token_state.reverse);
+    //         }
 
-            data.token_state.tokens = sort_info(
-                data.token_state.tokens.to_vec(),
-                &Sort::Total,
-                data.token_state.reverse,
-            );
+    //         data.token_state.tokens = sort_info(
+    //             data.token_state.tokens.to_vec(),
+    //             &Sort::Total,
+    //             data.token_state.reverse,
+    //         );
 
-            data.token_state.sort = Sort::Total;
-        });
+    //         data.token_state.sort = Sort::Total;
+    //     });
 
     let filter_label = Label::new(|data: &ApplicationState, _env: &Env| {
         let filter = &data.token_state.filter;
@@ -93,9 +93,9 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
     let header = Flex::row()
         .with_child(header_label)
         .with_flex_spacer(1.0)
-        .with_child(unknown_button)
-        .with_child(percent_button)
-        .with_child(total_button)
+        // .with_child(unknown_button)
+        // .with_child(percent_button)
+        // .with_child(total_button)
         .with_child(filter_button)
         .expand_width();
 
@@ -167,35 +167,35 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
     WidgetExt::center(view)
 }
 
-fn sort_info(info: Vec<TokenInfo>, sort: &Sort, reverse: bool) -> Arc<Vec<TokenInfo>> {
-    let mut info = info;
+// fn sort_info(info: Vec<TokenInfo>, sort: &Sort, reverse: bool) -> Arc<Vec<TokenInfo>> {
+//     let mut info = info;
 
-    match *sort {
-        Sort::Total => {
-            if reverse {
-                info.sort_by_key(|token| Reverse(token.total_seen()));
-            } else {
-                info.sort_by_key(|token| token.total_seen());
-            }
-        }
-        Sort::Unknown => {
-            if reverse {
-                info.sort_by_key(|token| Reverse(token.total_unknown()));
-            } else {
-                info.sort_by_key(|token| token.total_unknown());
-            }
-        }
-        Sort::Percent => {
-            if reverse {
-                info.sort_by_key(|token| Reverse(token.percent_known()));
-            } else {
-                info.sort_by_key(|token| token.percent_known());
-            }
-        }
-    }
+//     match *sort {
+//         Sort::Total => {
+//             if reverse {
+//                 info.sort_by_key(|token| Reverse(token.total_seen()));
+//             } else {
+//                 info.sort_by_key(|token| token.total_seen());
+//             }
+//         }
+//         Sort::Unknown => {
+//             if reverse {
+//                 info.sort_by_key(|token| Reverse(token.total_unknown()));
+//             } else {
+//                 info.sort_by_key(|token| token.total_unknown());
+//             }
+//         }
+//         Sort::Percent => {
+//             if reverse {
+//                 info.sort_by_key(|token| Reverse(token.percent_known()));
+//             } else {
+//                 info.sort_by_key(|token| token.percent_known());
+//             }
+//         }
+//     }
 
-    Arc::new(info.to_vec())
-}
+//     Arc::new(info.to_vec())
+// }
 
 fn filter_info(info: Vec<TokenInfo>, filter: &Filter) -> Arc<Vec<TokenInfo>> {
     let mut info = info;
