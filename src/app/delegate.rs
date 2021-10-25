@@ -1,4 +1,6 @@
-use super::{COPY, FILES, MARK_KNOWN, LEARNED, MARK_UNKNOWN, OPEN, READER, REDO, STATISTICS, TOKENS, UNDO};
+use super::{
+    COPY, FILES, LEARNED, MARK_KNOWN, MARK_UNKNOWN, OPEN, READER, REDO, STATISTICS, TOKENS, UNDO,
+};
 use crate::{ApplicationState, Filter, Operation, View};
 use anyhow::{anyhow, Result};
 use druid::{
@@ -87,7 +89,9 @@ impl AppDelegate<ApplicationState> for Delegate {
             let id = *cmd.get(LEARNED).expect("Failed to unwrap token id");
             let filter = &data.token_state.filter;
 
-            let token_state = database.update_learned(id, filter).expect("Failed to update token id");
+            let token_state = database
+                .update_learned(id, filter)
+                .expect("Failed to update token id");
 
             data.token_state = token_state;
         }

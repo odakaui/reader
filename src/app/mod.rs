@@ -140,10 +140,7 @@ pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
                 BACKGROUND_TEXT_COLOR,
                 Color::from_hex_str("#3C3C3C").unwrap(),
             );
-            env.set(
-                BORDER_COLOR,
-                Color::rgb8(0x36, 0x36, 0x36)
-            );
+            env.set(BORDER_COLOR, Color::rgb8(0x36, 0x36, 0x36));
         })
         .launch(initial_state)?;
 

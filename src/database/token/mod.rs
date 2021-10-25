@@ -89,4 +89,3 @@ fn update_token(conn: &Connection, id: i32, learned: bool) -> Result<()> {
 
     Ok(())
 }
-

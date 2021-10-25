@@ -1,9 +1,9 @@
-use super::{LEARNED, COPY, BORDER_COLOR, HORIZONTAL_WIDGET_SPACING, VERTICAL_WIDGET_SPACING};
+use super::{BORDER_COLOR, COPY, HORIZONTAL_WIDGET_SPACING, LEARNED, VERTICAL_WIDGET_SPACING};
 use crate::{ApplicationState, Filter, Sort, Token, TokenInfo, TokenState};
 use druid::widget::{Button, Checkbox, Controller, Flex, Label, List, Scroll};
 use druid::{
-    Command, Env, EventCtx, FontDescriptor, FontFamily, Color, Insets, LensExt, Target, UpdateCtx, Widget,
-    WidgetExt,
+    Color, Command, Env, EventCtx, FontDescriptor, FontFamily, Insets, LensExt, Target, UpdateCtx,
+    Widget, WidgetExt,
 };
 use std::cmp::Reverse;
 use std::sync::Arc;
@@ -78,17 +78,19 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
     })
     .with_font(data_font.clone());
 
-    let filter_button = Button::from_label(filter_label).on_click(
-        |_ctx: &mut EventCtx, data: &mut ApplicationState, _env: &Env| {
-            let database = data.database.borrow_mut();
+    let filter_button = Button::from_label(filter_label)
+        .on_click(
+            |_ctx: &mut EventCtx, data: &mut ApplicationState, _env: &Env| {
+                let database = data.database.borrow_mut();
 
-            let filter = filter_type(&data.token_state.filter);
-            data.token_state = database.tokens(&filter).expect("failed to load tokens");
+                let filter = filter_type(&data.token_state.filter);
+                data.token_state = database.tokens(&filter).expect("failed to load tokens");
 
-            data.token_state.tokens =
-                filter_info(data.token_state.tokens.to_vec(), &data.token_state.filter);
-        },
-    );
+                data.token_state.tokens =
+                    filter_info(data.token_state.tokens.to_vec(), &data.token_state.filter);
+            },
+        )
+        .fix_width(200.);
 
     let header = Flex::row()
         .with_child(header_label)
@@ -129,10 +131,15 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
         .with_font(font.clone())
         .with_line_break_mode(druid::widget::LineBreaking::Clip);
 
-        let learned_button = Button::from_label(learned_label).on_click(|ctx: &mut EventCtx, info: &mut TokenInfo, _env| {
-            ctx.submit_command(Command::new(LEARNED, info.history_token.token_id, Target::Auto)); 
-        })
-        .fix_width(200.);
+        let learned_button = Button::from_label(learned_label)
+            .on_click(|ctx: &mut EventCtx, info: &mut TokenInfo, _env| {
+                ctx.submit_command(Command::new(
+                    LEARNED,
+                    info.history_token.token_id,
+                    Target::Auto,
+                ));
+            })
+            .fix_width(200.);
 
         let copy_label = Label::new("Copy").with_font(font);
 
