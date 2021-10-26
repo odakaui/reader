@@ -1,5 +1,6 @@
 use super::{
-    COPY, FILES, LEARNED, MARK_KNOWN, MARK_UNKNOWN, OPEN, READER, REDO, STATISTICS, TOKENS, UNDO,
+    COPY, FILES, FILTER, LEARNED, MARK_KNOWN, MARK_UNKNOWN, OPEN, READER, REDO, STATISTICS, TOKENS,
+    UNDO,
 };
 use crate::{ApplicationState, Filter, Operation, View};
 use anyhow::{anyhow, Result};
@@ -93,6 +94,16 @@ impl AppDelegate<ApplicationState> for Delegate {
                 .update_learned(id, filter)
                 .expect("Failed to update token id");
 
+            data.token_state = token_state;
+        } else if cmd.is(FILTER) {
+            println!("Filter");
+
+            let database = data.database.borrow_mut();
+            let filter = cmd.get(FILTER).expect("Filter was not provided.");
+
+            let token_state = database
+                .update_filter(filter)
+                .expect("Failed to update the current filter.");
             data.token_state = token_state;
         }
 

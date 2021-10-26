@@ -1,5 +1,5 @@
 use super::{OPEN, VERTICAL_WIDGET_SPACING};
-use crate::{ApplicationState, File, FileState, Filter, Sort, Token, TokenInfo, TokenState};
+use crate::{ApplicationState, File, FileState, Filter, Token, TokenInfo, TokenState};
 use druid::widget::{Button, Checkbox, Controller, Flex, Label, List, Scroll};
 use druid::{
     Command, Env, EventCtx, FontDescriptor, FontFamily, Insets, LensExt, Target, UpdateCtx, Widget,
@@ -48,35 +48,35 @@ pub fn build_files_view() -> impl Widget<ApplicationState> {
     WidgetExt::center(view)
 }
 
-fn sort_info(info: Vec<TokenInfo>, sort: &Sort, reverse: bool) -> Arc<Vec<TokenInfo>> {
-    let mut info = info;
+// fn sort_info(info: Vec<TokenInfo>, sort: &Sort, reverse: bool) -> Arc<Vec<TokenInfo>> {
+//     let mut info = info;
 
-    match *sort {
-        Sort::Total => {
-            if reverse {
-                info.sort_by_key(|token| Reverse(token.total_seen()));
-            } else {
-                info.sort_by_key(|token| token.total_seen());
-            }
-        }
-        Sort::Unknown => {
-            if reverse {
-                info.sort_by_key(|token| Reverse(token.total_unknown()));
-            } else {
-                info.sort_by_key(|token| token.total_unknown());
-            }
-        }
-        Sort::Percent => {
-            if reverse {
-                info.sort_by_key(|token| Reverse(token.percent_known()));
-            } else {
-                info.sort_by_key(|token| token.percent_known());
-            }
-        }
-    }
+//     match *sort {
+//         Sort::Total => {
+//             if reverse {
+//                 info.sort_by_key(|token| Reverse(token.total_seen()));
+//             } else {
+//                 info.sort_by_key(|token| token.total_seen());
+//             }
+//         }
+//         Sort::Unknown => {
+//             if reverse {
+//                 info.sort_by_key(|token| Reverse(token.total_unknown()));
+//             } else {
+//                 info.sort_by_key(|token| token.total_unknown());
+//             }
+//         }
+//         Sort::Percent => {
+//             if reverse {
+//                 info.sort_by_key(|token| Reverse(token.percent_known()));
+//             } else {
+//                 info.sort_by_key(|token| token.percent_known());
+//             }
+//         }
+//     }
 
-    Arc::new(info.to_vec())
-}
+//     Arc::new(info.to_vec())
+// }
 
 fn filter_info(info: Vec<TokenInfo>, filter: &Filter) -> Arc<Vec<TokenInfo>> {
     let mut info = info;

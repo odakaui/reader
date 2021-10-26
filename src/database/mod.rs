@@ -10,13 +10,16 @@ pub use file::word;
 pub use file::File;
 pub use file::Word;
 pub use file_state::FileState;
+pub use filter::Filter;
 pub use history_token::HistoryToken;
 pub use reader_state::{ReaderState, Status};
 pub use state::Operation;
 pub use statistics_state::StatisticsState;
 pub use token::{Token, POS};
 pub use token_info::TokenInfo;
-pub use token_state::{Filter, Sort, TokenState};
+pub use token_state::TokenState;
+
+pub mod filter;
 
 mod common;
 mod database_error;
@@ -47,6 +50,7 @@ impl Database {
         let conn = Connection::open(database_path)?;
 
         file::initialize(&conn, &files_dir)?;
+        filter::initialize(&conn)?;
 
         let file = file::current_file(&conn, &files_dir).ok();
 
@@ -213,20 +217,27 @@ impl Database {
     pub fn tokens(&self, filter: &Filter) -> Result<TokenState> {
         let conn = &self.conn;
 
-        file::tokens(conn, filter)
+        TokenState::new(conn) 
     }
 
     pub fn update_learned(&self, id: i32, filter: &Filter) -> Result<TokenState> {
         let conn = &self.conn;
         token::toggle_learned(conn, id)?;
 
-        file::tokens(conn, filter)
+        TokenState::new(conn) 
     }
 
     pub fn files(&self) -> Result<FileState> {
         let conn = &self.conn;
 
         file::files(conn)
+    }
+
+    pub fn update_filter(&self, filter: &Filter) -> Result<TokenState> {
+        let conn = &self.conn;
+        filter::set_filter(conn, filter)?;
+
+        TokenState::new(conn) 
     }
 }
 

@@ -66,4 +66,8 @@ impl TokenInfo {
     pub fn lemma(&self) -> String {
         self.token.lemma.to_string()
     }
+
+    pub fn learned(&self) -> bool {
+        self.token.learned
+    }
 }

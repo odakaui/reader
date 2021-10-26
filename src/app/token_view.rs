@@ -1,5 +1,5 @@
-use super::{BORDER_COLOR, COPY, HORIZONTAL_WIDGET_SPACING, LEARNED, VERTICAL_WIDGET_SPACING};
-use crate::{ApplicationState, Filter, Sort, Token, TokenInfo, TokenState};
+use super::{BORDER_COLOR, COPY, HORIZONTAL_WIDGET_SPACING, LEARNED, FILTER, VERTICAL_WIDGET_SPACING};
+use crate::{ApplicationState, Filter, Token, TokenInfo, TokenState};
 use druid::widget::{Button, Checkbox, Controller, Flex, Label, List, Scroll};
 use druid::{
     Color, Command, Env, EventCtx, FontDescriptor, FontFamily, Insets, LensExt, Target, UpdateCtx,
@@ -80,14 +80,10 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
 
     let filter_button = Button::from_label(filter_label)
         .on_click(
-            |_ctx: &mut EventCtx, data: &mut ApplicationState, _env: &Env| {
-                let database = data.database.borrow_mut();
-
+            |ctx: &mut EventCtx, data: &mut ApplicationState, _env: &Env| {
                 let filter = filter_type(&data.token_state.filter);
-                data.token_state = database.tokens(&filter).expect("failed to load tokens");
 
-                data.token_state.tokens =
-                    filter_info(data.token_state.tokens.to_vec(), &data.token_state.filter);
+                ctx.submit_command(Command::new(FILTER, filter, Target::Auto));
             },
         )
         .fix_width(200.);
@@ -204,26 +200,6 @@ pub fn build_token_view() -> impl Widget<ApplicationState> {
 //     Arc::new(info.to_vec())
 // }
 
-fn filter_info(info: Vec<TokenInfo>, filter: &Filter) -> Arc<Vec<TokenInfo>> {
-    let mut info = info;
-
-    match *filter {
-        Filter::All => Arc::new(info.to_vec()),
-        Filter::Learned => Arc::new(
-            info.into_iter()
-                .filter(|info| info.token.learned == true)
-                .collect::<Vec<TokenInfo>>()
-                .to_vec(),
-        ),
-        Filter::Unlearned => Arc::new(
-            info.into_iter()
-                .filter(|info| info.token.learned != true)
-                .collect::<Vec<TokenInfo>>()
-                .to_vec(),
-        ),
-    }
-}
-
 fn filter_type(filter: &Filter) -> Filter {
     match filter {
         Filter::All => Filter::Unlearned,
@@ -232,9 +208,9 @@ fn filter_type(filter: &Filter) -> Filter {
     }
 }
 
-fn reverse(b: bool) -> bool {
-    match b {
-        true => false,
-        false => true,
-    }
-}
+// fn reverse(b: bool) -> bool {
+//     match b {
+//         true => false,
+//         false => true,
+//     }
+// }

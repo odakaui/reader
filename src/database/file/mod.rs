@@ -1,6 +1,6 @@
 use super::{common, history, history_token, state};
 use super::{
-    DatabaseError, FileState, Filter, Operation, Position, Sort, State, StatisticsState, Token,
+    DatabaseError, FileState, Filter, Operation, Position, State, StatisticsState, Token,
     TokenInfo, TokenState, Tokenizer, POS,
 };
 use anyhow::{anyhow, Context, Result};
@@ -217,11 +217,6 @@ pub fn statistics(conn: &Connection, file: &File) -> Result<StatisticsState> {
         total_seen,
         total_unknown,
     })
-}
-
-pub fn tokens(conn: &Connection, filter: &Filter) -> Result<TokenState> {
-    let tokens = TokenInfo::all(conn)?;
-    Ok(TokenState::new(&tokens, &Sort::Total, filter))
 }
 
 pub fn files(conn: &Connection) -> Result<FileState> {

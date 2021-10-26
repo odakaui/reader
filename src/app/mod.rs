@@ -1,4 +1,4 @@
-use crate::{ApplicationState, Status, View};
+use crate::{ApplicationState, Filter, Status, View};
 use anyhow::{anyhow, Result};
 use delegate::Delegate;
 use druid::widget::{
@@ -39,6 +39,7 @@ const OPEN: Selector<i32> = Selector::new("OPEN");
 const FILES: Selector<()> = Selector::new("FILES");
 const COPY: Selector<String> = Selector::new("COPY");
 const LEARNED: Selector<i32> = Selector::new("LEARNED");
+const FILTER: Selector<Filter> = Selector::new("FILTER");
 
 pub fn launch_app(initial_state: ApplicationState) -> Result<()> {
     // create the open file dialogue

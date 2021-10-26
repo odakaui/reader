@@ -6,7 +6,7 @@ use std::rc::Rc;
 use app::launch_app;
 use database::word;
 use database::{
-    Database, File, FileState, Filter, Operation, ReaderState, Sort, StatisticsState, Status,
+    Database, File, FileState, Filter, Operation, ReaderState, StatisticsState, Status,
     Token, TokenInfo, TokenState, Word,
 };
 
