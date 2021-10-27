@@ -20,9 +20,9 @@ pub fn initialize(conn: &Connection) -> Result<()> {
         r#"CREATE TABLE IF NOT EXISTS tokens (
             id INTEGER PRIMARY KEY,
             lemma TEXT NOT NULL UNIQUE,
-            text TEXT NOT NULL,
             pos INTEGER NOT NULL,
-            learned INTEGER NOT NULL DEFAULT 0
+            learned INTEGER NOT NULL DEFAULT 0,
+            CONSTRAINT uq_token UNIQUE (lemma, pos)
         )"#,
         [],
     )?;
@@ -32,8 +32,8 @@ pub fn initialize(conn: &Connection) -> Result<()> {
 
 pub fn insert_token(conn: &Connection, token: &Token) -> Result<()> {
     conn.execute(
-        r#"INSERT OR IGNORE INTO tokens (text, lemma, pos) VALUES (?1, ?2, ?3)"#,
-        params![token.text, token.lemma, token.pos.to_int()],
+        r#"INSERT OR IGNORE INTO tokens (lemma, pos) VALUES (?1, ?2)"#,
+        params![token.lemma, token.pos.to_int()],
     )?;
 
     Ok(())
@@ -47,14 +47,14 @@ pub fn delete_token(conn: &Connection, lemma: &str) -> Result<()> {
 
 pub fn select_token(conn: &Connection, id: i32) -> Result<Token> {
     Ok(conn.query_row(
-        r#"SELECT lemma, text, pos, learned FROM tokens WHERE id=?1"#,
+        r#"SELECT lemma, pos, learned FROM tokens WHERE id=?1"#,
         params![id],
         |row| {
             Ok(Token {
                 lemma: row.get(0)?,
-                text: row.get(1)?,
-                pos: POS::to_pos(row.get(2)?),
-                learned: row.get::<usize, i32>(3)? == 1,
+                text: "".to_string(),
+                pos: POS::to_pos(row.get(1)?),
+                learned: row.get::<usize, i32>(2)? == 1,
             })
         },
     )?)
@@ -64,7 +64,7 @@ pub fn select_token_id(conn: &Connection, lemma: &str) -> Result<i32> {
     Ok(conn.query_row(
         r#"SELECT id FROM tokens WHERE lemma=?1"#,
         params![lemma],
-        |row| Ok(row.get::<usize, i32>(0)?),
+        |row| row.get::<usize, i32>(0),
     )?)
 }
 
