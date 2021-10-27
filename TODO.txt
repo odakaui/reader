@@ -2,9 +2,8 @@ Probably refactor and simplify code first before any new features.
 
 
 
-[IMPORTANT] Remove sorting. Save filtering across refresh.
+[IMPORTANT] Remove "text" field from tokens table.
 [IMPORTANT] Use Selectors and Commands for all view commands to clean up code.
-[IMPORTANT] Make tokens save whenever a checkbox is checked or unchecked.
 
 Move the database instance to the AppDelegate
 
@@ -27,3 +26,8 @@ Fix layout on files view.
 Add highlights to the selected rows in lists.
 
 Add history view for each file.
+
+## Done
+
+[IMPORTANT] Remove sorting. Save filtering across refresh.
+[IMPORTANT] Make tokens save whenever a checkbox is checked or unchecked.
