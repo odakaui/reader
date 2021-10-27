@@ -2,6 +2,12 @@ Probably refactor and simplify code first before any new features.
 
 
 
+[IMPORTANT] Add table coloring for file view
+[IMPORTANT] Single click selects row in file view
+[IMPORTANT] Double click opens row in file view
+[IMPORTANT] Add open button in file view
+[IMPORTANT] Add delete button in file view
+
 [IMPORTANT] Use Selectors and Commands for all view commands to clean up code.
 
 Move the database instance to the AppDelegate
