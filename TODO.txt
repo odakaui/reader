@@ -2,12 +2,9 @@ Probably refactor and simplify code first before any new features.
 
 
 
-[IMPORTANT] Remove "text" field from tokens table.
 [IMPORTANT] Use Selectors and Commands for all view commands to clean up code.
 
 Move the database instance to the AppDelegate
-
-[SIMPLIFY] Remove filtering for tokens and only show tokens sorted by unknown?
 
 Improve the formatting on the statistics screen.
 
@@ -31,3 +28,5 @@ Add history view for each file.
 
 [IMPORTANT] Remove sorting. Save filtering across refresh.
 [IMPORTANT] Make tokens save whenever a checkbox is checked or unchecked.
+[IMPORTANT] Remove "text" field from tokens table.
+[SIMPLIFY] Remove filtering for tokens and only show tokens sorted by unknown?
